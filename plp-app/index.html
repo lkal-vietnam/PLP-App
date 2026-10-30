@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PLP — Vận hành kho</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#D32027">
+<meta name="apple-mobile-web-app-title" content="PLP">
+<style>
+  html, body { margin: 0; height: 100%; background: #fff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #bar { display: none; align-items: center; gap: 10px; background: #D32027; color: #fff; padding: 7px 12px; font-size: 13px; }
+  #bar span { flex: 1; min-width: 0; }
+  #bar button { border: 0; border-radius: 6px; padding: 6px 12px; font-weight: 700; font-size: 13px; cursor: pointer; }
+  #bar #inst { background: #fff; color: #D32027; }
+  #bar #x { background: transparent; color: #fff; font-size: 18px; padding: 2px 8px; }
+  #wrap { display: flex; flex-direction: column; height: 100%; }
+  #app { flex: 1; width: 100%; border: 0; display: block; }
+  #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #D32027; color: #fff; font-weight: 700; font-size: 22px; letter-spacing: 1px; transition: opacity .3s; }
+  #loading small { font-size: 12px; font-weight: 400; opacity: .85; text-align: center; padding: 0 24px; }
+  #loading a { color: #fff; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="bar"><span id="msg"></span><button id="inst" style="display:none">Cài PLP</button><button id="x" aria-label="Đóng">×</button></div>
+  <iframe id="app" title="PLP" allow="camera; clipboard-write; fullscreen" referrerpolicy="no-referrer-when-downgrade"></iframe>
+</div>
+<div id="loading">PLP<small id="ltxt">Đang mở ứng dụng...</small></div>
+
+<script>
+// ===== CẤU HÌNH: dán link /exec của app Apps Script vào đây (Triển khai > Quản lý bản triển khai > Ứng dụng web) =====
+var APP_URL = "https://script.google.com/macros/s/AKfycbyuC73oDiaQX4Gh6EtjU6chwI_Rcb2zhFAv9h1idpFcCgV-WMdToWr0PthtEZ5-iC9p-Q/exec";
+// ================================================================================================================
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var frame = $("app"), loading = $("loading");
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec/.test(APP_URL)) {
+    $("ltxt").innerHTML = "Chưa cấu hình link app. Mở file index.html, dán link /exec vào dòng APP_URL.";
+    return;
+  }
+  frame.src = APP_URL;
+  var hideT = setTimeout(function () { $("ltxt").innerHTML = 'Mở hơi lâu... <a href="' + APP_URL + '">Bấm đây để mở trực tiếp</a>'; }, 12000);
+  frame.addEventListener("load", function () { clearTimeout(hideT); loading.style.opacity = 0; setTimeout(function () { loading.style.display = "none"; }, 320); });
+
+  // thanh gợi ý cài đặt (chỉ hiện khi chưa cài)
+  var standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  var dismissed = false; try { dismissed = localStorage.getItem("plp_bar_off") === "1"; } catch (e) {}
+  function showBar(text, withBtn) {
+    if (standalone || dismissed) return;
+    $("msg").textContent = text; $("inst").style.display = withBtn ? "" : "none"; $("bar").style.display = "flex";
+  }
+  $("x").onclick = function () { $("bar").style.display = "none"; try { localStorage.setItem("plp_bar_off", "1"); } catch (e) {} };
+  var deferred = null;
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferred = e; showBar("Cài PLP về máy để mở nhanh như phần mềm.", true); });
+  $("inst").onclick = function () { if (!deferred) return; deferred.prompt(); deferred.userChoice.then(function () { deferred = null; $("bar").style.display = "none"; }); };
+  window.addEventListener("appinstalled", function () { $("bar").style.display = "none"; });
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  if (ios) showBar("Cài về máy: bấm nút Chia sẻ → \"Thêm vào MH chính\".", false);
+
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
+})();
+</script>
+</body>
+</html>
