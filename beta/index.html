@@ -7,7 +7,7 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script src="libs.js?v=fcfd60b1"></script>
+<script src="libs.js?v=96ad93b0"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
   /* Lần sửa 75 — điện thoại / máy tính bảng (màn cảm ứng):
@@ -29,6 +29,10 @@
   /* Lần sửa 92 — thanh điều hướng: rê chuột / focus bàn phím */
   .plp-nav-item:hover { background: rgba(37, 87, 214, 0.08) !important; }
   .plp-nav-item:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid #2557D6; outline-offset: 2px; }
+  /* Lần sửa 112 — ô nhập / ô chọn đang được chọn: viền xanh rõ (trước đây outline: none -> không biết con trỏ đang ở ô nào).
+     !important vì kiểu viết thẳng trong thẻ (selectStyle) đặt outline: none. */
+  input:focus, select:focus, textarea:focus { outline: 2px solid #2557D6 !important; outline-offset: 0; border-color: #2557D6 !important; }
+  input[type="checkbox"]:focus:not(:focus-visible), input[type="radio"]:focus:not(:focus-visible) { outline: none !important; }
 </style>
 
 </head>
@@ -253,10 +257,10 @@ const COLORS = {
   accentDark: "#1B43A8",
   text: "#1B2433",
   muted: "#5B6679",
-  success: "#17803F",
+  success: "#0F6B35", // Lần sửa 112 — đậm hơn (#17803F): chữ trên nền nhạt cùng màu đạt tương phản 4,5:1
   danger: "#C9283F",
   info: "#0F6DB3",
-  warn: "#B45309",
+  warn: "#9F4706", // Lần sửa 112 — đậm hơn (#B45309), cùng lý do
   onAccent: "#FFFFFF",
 };
 
@@ -13705,7 +13709,7 @@ function sfShortCode(key) { const i = key.indexOf(":"); const c = key.slice(i + 
    Dữ liệu tiền chỉ đến từ file Excel (không còn lấy từ đơn nhập trong app). Phần tính nằm ở SalesFileCore.html.
 ---------------------------------------------------------------- */
 const sfMoney = (n) => Math.round(Number(n) || 0).toLocaleString("vi-VN");
-const SF_STATUS_COLOR = { TM: "#17803F", CK: "#0F6DB3", NO: "#B45309", ROT: "#C9283F" };
+const SF_STATUS_COLOR = { TM: COLORS.success, CK: COLORS.info, NO: COLORS.warn, ROT: COLORS.danger }; // Lần sửa 112 — dùng bảng màu chung
 
 function SfPill({ st }) {
   return <span style={{ display: "inline-block", padding: "1px 8px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: SF_STATUS_COLOR[st] || COLORS.muted, background: (SF_STATUS_COLOR[st] || COLORS.muted) + "22", border: `1px solid ${(SF_STATUS_COLOR[st] || COLORS.muted)}55` }}>{SF_STATUS_LABEL[st] || st}</span>;
