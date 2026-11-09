@@ -7,9 +7,30 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script src="libs.js?v=7c2033f9"></script>
+<script src="libs.js?v=c5636511"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
+  /* Lần sửa 117 — NÂNG CẤP CẢM GIÁC: chữ mịn, số thẳng cột (mọi bảng tiền / số lượng), ô tích cùng màu chủ đạo */
+  body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+    font-variant-numeric: tabular-nums; accent-color: #2557D6; -webkit-tap-highlight-color: rgba(37, 87, 214, 0.12); }
+  ::selection { background: rgba(37, 87, 214, 0.18); }
+  .plp-btn:not(:disabled):hover { filter: brightness(0.96); }
+  .plp-btn-ghost:not(:disabled):hover, .plp-btn-danger:not(:disabled):hover { background-color: #F6F8FB !important; filter: none; }
+  button[aria-pressed]:not(:disabled):hover { filter: brightness(0.98); }
+  input:not([type="checkbox"]):not([type="radio"]):hover, select:hover, textarea:hover { border-color: #AEB9CA; }
+  /* Hộp thoại: bóng đổ sâu + hiện ra nhẹ (tắt hiệu ứng khi máy đặt "giảm chuyển động") */
+  [role="dialog"][aria-modal="true"] { animation: plpFade 0.14s ease-out; }
+  [role="dialog"][aria-modal="true"] > :first-child { box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.30), 0 2px 6px rgba(15, 23, 42, 0.06); animation: plpPop 0.16s ease-out; }
+  @keyframes plpFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes plpPop { from { opacity: 0; transform: translateY(6px) scale(0.985); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { [role="dialog"][aria-modal="true"], [role="dialog"][aria-modal="true"] > :first-child { animation: none; } }
+  /* Thanh cuộn mảnh, màu nhạt (máy tính) */
+  @media (pointer: fine) {
+    * { scrollbar-width: thin; scrollbar-color: #C9D2DF transparent; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: #C9D2DF; border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: #AEB9CA; border: 3px solid transparent; background-clip: padding-box; }
+  }
   /* Lần sửa 75 — điện thoại / máy tính bảng (màn cảm ứng):
      - ô tích to 20px (trước 13px, rất khó bấm trúng)
      - chữ trong ô nhập >= 16px: iPhone không tự phóng to màn hình mỗi lần chạm vào ô (app đã cho phóng to bằng 2 ngón)
@@ -252,7 +273,8 @@ const COLORS = {
   bg: "#F3F5F9",
   panel: "#FFFFFF",
   panel2: "#F1F4F9",
-  border: "#D7DDE8",
+  border: "#E1E6EE", // Lần sửa 117 — viền thẻ / đường chia nhạt hơn, gọn mắt (ô nhập dùng borderStrong)
+  borderStrong: "#C9D2DF",
   accent: "#2557D6",
   accentDark: "#1B43A8",
   text: "#1B2433",
@@ -826,7 +848,7 @@ function Btn({ children, onClick, variant = "primary", disabled, style, full, ty
     fontFamily: "Inter, sans-serif",
     fontWeight: 600,
     fontSize: FONT.md,
-    padding: "12px 18px",
+    padding: "11px 16px", // Lần sửa 117 — gọn hơn chút (trước 12px 18px)
     borderRadius: 8,
     border: "none",
     cursor: disabled ? "not-allowed" : "pointer",
@@ -834,19 +856,21 @@ function Btn({ children, onClick, variant = "primary", disabled, style, full, ty
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    transition: "filter 0.15s ease, transform 0.05s ease",
+    transition: "filter 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease",
     width: full ? "100%" : undefined,
     opacity: disabled ? 0.45 : 1,
   };
   const variants = {
-    primary: { background: COLORS.accent, color: COLORS.onAccent },
-    ghost: { background: "transparent", color: COLORS.text, border: `1px solid ${COLORS.border}` },
-    danger: { background: "transparent", color: COLORS.danger, border: `1px solid ${COLORS.danger}55` },
-    success: { background: COLORS.success, color: COLORS.onAccent },
+    // Lần sửa 117 — nút chính có bóng nhẹ cùng màu; nút phụ nền trắng + viền rõ (trước trong suốt, chìm vào nền xám)
+    primary: { background: COLORS.accent, color: COLORS.onAccent, boxShadow: "0 1px 2px rgba(37,87,214,0.25), inset 0 1px 0 rgba(255,255,255,0.12)" },
+    ghost: { background: COLORS.panel, color: COLORS.text, border: `1px solid ${COLORS.borderStrong}`, boxShadow: "0 1px 2px rgba(15,23,42,0.05)" },
+    danger: { background: COLORS.panel, color: COLORS.danger, border: `1px solid ${COLORS.danger}55` },
+    success: { background: COLORS.success, color: COLORS.onAccent, boxShadow: "0 1px 2px rgba(15,107,53,0.25)" },
   };
   return (
     <button
       type={type}
+      className={"plp-btn plp-btn-" + variant}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       style={{ ...base, ...variants[variant], ...style }}
@@ -974,7 +998,7 @@ function SegButton(props) {
 
 function Card({ children, style }) {
   return (
-    <div style={{ background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 18, ...style }}>
+    <div className="plp-card" style={{ background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 18, boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.05)", ...style }}>
       {children}
     </div>
   );
@@ -991,7 +1015,7 @@ function Field({ label, children, style }) {
 
 const selectStyle = {
   background: COLORS.panel2,
-  border: `1px solid ${COLORS.border}`,
+  border: `1px solid ${COLORS.borderStrong}`, // Lần sửa 117 — ô nhập có viền rõ hơn viền thẻ (nhận ra ô nhập ngoài nắng)
   color: COLORS.text,
   borderRadius: 8,
   padding: "10px 12px",
@@ -2094,12 +2118,13 @@ function SkuPicker({ skus, selectedCode, onSelect, autoFocus, scan, onScanPick, 
 <script type="text/babel" data-presets="react">
 function AuthHeader() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-      <div style={{ width: 40, height: 40, borderRadius: 9, background: COLORS.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Layers size={22} color={COLORS.onAccent} />
+    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+      {/* Lần sửa 117 — dùng đúng biểu tượng PLP (chữ trắng nền đỏ, giống icon cài app) thay cho icon chung */}
+      <div aria-hidden="true" style={{ width: 46, height: 46, borderRadius: 12, background: "#D32027", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontWeight: 700, fontSize: FONT.lg, letterSpacing: 0.5, boxShadow: "0 4px 12px rgba(211,32,39,0.28)" }}>
+        PLP
       </div>
       <div>
-        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: FONT.xl, lineHeight: 1, color: COLORS.text }}>
+        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: FONT.xl, lineHeight: 1.05, letterSpacing: 0.2, color: COLORS.text }}>
           VẬN HÀNH KHO PLP
         </div>
         <div style={{ fontSize: FONT.base, color: COLORS.muted }}>Kiểm kho tồn kho · Ra đơn bán hàng</div>
@@ -2149,7 +2174,7 @@ function FirstSetup({ onDone }) {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
         <AuthHeader />
-        <Card>
+        <Card style={{ padding: 22, boxShadow: "0 10px 30px -12px rgba(15,23,42,0.18), 0 1px 3px rgba(15,23,42,0.06)" }}>
           <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
             Khởi tạo lần đầu — Tài khoản Quản lý cấp cao
           </div>
@@ -2219,7 +2244,7 @@ function LoginScreen({ onEnter, notice }) {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
         <AuthHeader />
-        <Card>
+        <Card style={{ padding: 22, boxShadow: "0 10px 30px -12px rgba(15,23,42,0.18), 0 1px 3px rgba(15,23,42,0.06)" }}>
           <div style={{ fontSize: FONT.base, color: COLORS.muted, marginBottom: 14 }}>Đăng nhập để bắt đầu ca làm việc</div>
           {notice && <div style={{ fontSize: FONT.base, color: COLORS.accent, marginBottom: 12 }}>{notice}</div>}
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -3521,7 +3546,7 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
             return (
               <button key={t.id} type="button" data-testid={"bar-" + t.id} aria-current={active && t.id !== "__more" ? "page" : undefined} onClick={() => (t.id === "__more" ? setSheetOpen(true) : goTab(t.id))}
                 className="tap-free"
-                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "8px 2px 7px", minHeight: 56, border: "none", background: "transparent", cursor: "pointer", fontSize: FONT.xs, fontWeight: active ? 700 : 600, color: active ? COLORS.accent : COLORS.muted }}>
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "8px 2px 7px", minHeight: 56, border: "none", background: "transparent", boxShadow: active ? `inset 0 2px 0 ${COLORS.accent}` : "none" /* Lần sửa 117 — vạch xanh trên mục đang mở */, cursor: "pointer", fontSize: FONT.xs, fontWeight: active ? 700 : 600, color: active ? COLORS.accent : COLORS.muted }}>
                 <t.icon size={20} /> {t.label}
               </button>
             );
