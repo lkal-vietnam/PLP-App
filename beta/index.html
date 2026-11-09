@@ -7,7 +7,7 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script src="libs.js?v=87b4be6b"></script>
+<script src="libs.js?v=fcfd60b1"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
   /* Lần sửa 75 — điện thoại / máy tính bảng (màn cảm ứng):
@@ -10120,6 +10120,16 @@ function OrderDetailModal({ order, editable, locked, skus, vehicles, onClose, on
   const [showAllRoutes, setShowAllRoutes] = useState(false);
   const routeOptions = showAllRoutes ? vehicles : vehicles.filter((v) => vehicleMatchesDow(v, dow) || v.id === routeId);
 
+  // Lần sửa 110 — phím Esc đóng hộp (cùng điều kiện với chạm ra nền: chỉ khi đang XEM, không khi đang sửa / đang lưu,
+  // và không khi phiếu in đang mở phía trên)
+  const escRef = useRef(null);
+  escRef.current = () => { if (!saving && mode === "view" && !document.querySelector(".ps-print-root")) onClose(); };
+  useEffect(() => {
+    const h = (e) => { if (e.key === "Escape") escRef.current && escRef.current(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 190, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={() => { if (!saving && mode === "view") onClose(); /* Lần sửa 65 — đang sửa thì chạm nền KHÔNG đóng (mất phần đang sửa) */ }}>
       <div data-testid="order-detail" onClick={(e) => e.stopPropagation()} style={{ background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 12, maxWidth: 560, width: "100%", maxHeight: "88vh", overflowY: "auto", padding: 20 }}>
@@ -10390,6 +10400,8 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
   const [bonusKhtcValue, setBonusKhtcValue] = useState(0);
   const [bonusKhtcUnit, setBonusKhtcUnit] = useState("d");
   const [taxTT40, setTaxTT40] = useState("");
+  const [adjOpen, setAdjOpen] = useState(false); // Lần sửa 110
+  const hasAdj = Number(discountValue) > 0 || Number(bonusKhtcValue) > 0 || Number(taxTT40) > 0;
 
   const [saving, setSaving] = useState(false);
   // Lần sửa 38: chốt chặn "bấm 2 lần lưu 2 lần" bằng ref đồng bộ — state
@@ -10864,7 +10876,8 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: COLORS.muted, background: COLORS.panel2, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "8px 12px", marginBottom: 16 }}>
         <ClipboardList size={14} color={COLORS.accent} />
-        Hôm qua bạn đã ra <b style={{ color: COLORS.text }}>{yesterdayCount}</b> đơn. Hôm nay số thứ tự bắt đầu lại từ 01 — đã ra <b style={{ color: COLORS.text }}>{todayOrders.length}</b> đơn.
+        {/* Lần sửa 110 — bọc trong 1 span: trước đây chữ và số là các ô flex riêng, số bị tách cột trông như lỗi */}
+        <span>Hôm qua bạn đã ra <b style={{ color: COLORS.text }}>{yesterdayCount}</b> đơn. Hôm nay số thứ tự bắt đầu lại từ 01 — đã ra <b style={{ color: COLORS.text }}>{todayOrders.length}</b> đơn.</span>
       </div>
 
       {/* ĐƠN NHÁP (Lần sửa 17) — luôn hiện khối này khi còn nháp chưa lưu, vừa
@@ -11062,6 +11075,18 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: COLORS.muted, marginBottom: 8 }}>
           <span>Tổng tiền hàng</span><span style={{ fontFamily: "'Roboto Mono', monospace", color: COLORS.text }}>{formatVND(subtotal)}</span>
         </div>
+        {caseDiscount > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: COLORS.muted, marginBottom: 8 }}>
+            <span>+ Giảm giá theo thùng (tự tính từ các dòng)</span><span style={{ fontFamily: "'Roboto Mono', monospace" }}>{formatVND(caseDiscount)}</span>
+          </div>
+        )}
+        {/* Lần sửa 110 — Chiết khấu / Thưởng KHTC / Thuế TT40 gom lại, bấm mới mở (đa số đơn không dùng); đơn đang có giá trị thì luôn mở */}
+        {!(adjOpen || hasAdj) ? (
+          <button type="button" data-testid="adj-toggle" onClick={() => setAdjOpen(true)} style={{ background: "none", border: `1px dashed ${COLORS.border}`, borderRadius: 8, padding: "8px 12px", marginBottom: 10, width: "100%", textAlign: "left", color: COLORS.accent, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
+            ＋ Chiết khấu / Thưởng KHTC / Thuế TT40
+          </button>
+        ) : (
+        <div data-testid="adj-box">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: COLORS.muted, marginBottom: 8, gap: 8 }}>
           <span>Chiết khấu / giảm giá</span>
           <div style={{ display: "flex", gap: 6 }}>
@@ -11071,11 +11096,6 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
             </select>
           </div>
         </div>
-        {caseDiscount > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: COLORS.muted, marginBottom: 8 }}>
-            <span>+ Giảm giá theo thùng (tự tính từ các dòng)</span><span style={{ fontFamily: "'Roboto Mono', monospace" }}>{formatVND(caseDiscount)}</span>
-          </div>
-        )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: COLORS.muted, marginBottom: 8, gap: 8 }}>
           <span>Thưởng KHTC</span>
           <div style={{ display: "flex", gap: 6 }}>
@@ -11089,6 +11109,9 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
           <span>Thuế TT40 (1% VAT, 0.5% TNCN) — để trống nếu không áp dụng</span>
           <input type="number" inputMode="decimal" min="0" value={taxTT40} onChange={(e) => setTaxTT40(e.target.value)} placeholder="0" style={{ ...selectStyle, width: 110, textAlign: "right" }} />
         </div>
+        {!hasAdj && <button type="button" onClick={() => setAdjOpen(false)} style={{ background: "none", border: "none", padding: "0 0 8px", color: COLORS.muted, fontSize: 11.5, cursor: "pointer" }}>Ẩn bớt</button>}
+        </div>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 17, fontWeight: 700, color: COLORS.text, borderTop: `1px solid ${COLORS.border}`, paddingTop: 10 }}>
           <span>Tổng thanh toán</span><span style={{ fontFamily: "'Roboto Mono', monospace" }}>{formatVND(grandTotal)}</span>
         </div>
@@ -12289,9 +12312,22 @@ function OrdersAdminTab({ profile, isSuper }) {
           <div style={{ padding: 18, fontSize: 13, color: COLORS.muted }}>Không có đơn nào khớp bộ lọc.</div>
         ) : (
           <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+            {/* Lần sửa 110 — hàng tiêu đề cột (máy tính), dính trên đầu khi cuộn */}
+            {!isMobile && (
+              <div data-testid="orders-head" style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", alignItems: "center", gap: 10, padding: "7px 16px", height: 32, boxSizing: "border-box", background: COLORS.panel, borderBottom: `1px solid ${COLORS.border}`, fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4, color: COLORS.muted, textTransform: "uppercase" }}>
+                <div style={{ width: 20, flexShrink: 0 }} />
+                <div style={{ width: 130, flexShrink: 0 }}>Mã đơn</div>
+                <div style={{ width: 42, flexShrink: 0 }}>Giờ</div>
+                <div style={{ width: 110, flexShrink: 0 }}>NVBH</div>
+                <div style={{ flex: 1, minWidth: 0 }}>Khách hàng · trạng thái</div>
+                <div style={{ width: 70, flexShrink: 0 }}>Tuyến</div>
+                <div style={{ width: 100, flexShrink: 0, textAlign: "right" }}>Tổng tiền</div>
+                <div style={{ width: isSuper ? 74 : 34, flexShrink: 0 }} />
+              </div>
+            )}
             {visibleOrders.map((o, oi) => (<React.Fragment key={o.orderDate + "|" + o.salesUsername + "|" + o.orderId}>
               {backlogDays > 0 && (oi === 0 || visibleOrders[oi - 1].orderDate !== o.orderDate) && (
-                <div data-testid="day-head" style={{ position: "sticky", top: 0, zIndex: 1, padding: "6px 16px", fontSize: 12, fontWeight: 700, color: COLORS.text, background: COLORS.panel2, borderBottom: `1px solid ${COLORS.border}` }}>
+                <div data-testid="day-head" style={{ position: "sticky", top: isMobile ? 0 : 32, zIndex: 1, padding: "6px 16px", fontSize: 12, fontWeight: 700, color: COLORS.text, background: COLORS.panel2, borderBottom: `1px solid ${COLORS.border}` }}>
                   {String(o.orderDate).split("-").reverse().join("/")} · {visibleOrders.filter((x) => x.orderDate === o.orderDate).length} đơn
                 </div>
               )}
@@ -12302,7 +12338,7 @@ function OrdersAdminTab({ profile, isSuper }) {
                 <input type="checkbox" checked={selectedIds.has(o.orderId)} onChange={() => toggleSelect(o.orderId)} style={{ marginTop: 4, cursor: "pointer", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                  <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 12, fontWeight: 600, color: COLORS.accent }}>{o.orderId}</div>
+                  <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 12, fontWeight: 600, color: COLORS.accent }}>{o.orderId}{o.orderTime ? <span style={{ fontWeight: 400, color: COLORS.muted }}> · {o.orderTime}</span> : null}</div>
                   <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Roboto Mono', monospace", color: COLORS.text }}>{formatVND(o.grandTotal)}</div>
                 </div>
                 <div onClick={() => setDetailOrder(o)} style={{ cursor: "pointer", fontSize: 13.5, fontWeight: 600, color: COLORS.text, margin: "4px 0 6px", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -12327,6 +12363,7 @@ function OrdersAdminTab({ profile, isSuper }) {
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
                 <input type="checkbox" checked={selectedIds.has(o.orderId)} onChange={() => toggleSelect(o.orderId)} style={{ cursor: "pointer", flexShrink: 0 }} />
                 <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 11.5, color: COLORS.accent, width: 130, flexShrink: 0 }}>{o.orderId}</div>
+                <div data-testid="order-time" style={{ fontFamily: "'Roboto Mono', monospace", fontSize: 11.5, color: COLORS.muted, width: 42, flexShrink: 0 }}>{o.orderTime || "—"}</div>
                 <div style={{ fontSize: 12.5, color: COLORS.text, width: 110, flexShrink: 0 }}>{o.salesName}</div>
                 {/* Lần sửa 77 — tên khách luôn hiện (được xuống dòng), các nhãn nằm ngay sau / xuống dòng dưới
                     (trước đây trên màn 900–1100px nhãn chiếm hết chỗ, tên khách bị ẩn mất) */}
