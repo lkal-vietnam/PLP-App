@@ -7,7 +7,7 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script src="libs.js?v=23f531c4"></script>
+<script src="libs.js?v=87b4be6b"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
   /* Lần sửa 75 — điện thoại / máy tính bảng (màn cảm ứng):
@@ -3217,7 +3217,7 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
   // Lần sửa 104 — Ban giám đốc: xem được mọi tab báo cáo / danh mục (chỉ xem), không có tab nhập liệu hay quản trị
   const isDirector = profile.role === "director";
   const canSeeSuperData = isSuper || isDirector;
-  const [tab, setTab] = useState("summary");
+  const [tab, setTab] = useState("orders"); // Lần sửa 108 — mở app vào thẳng Đơn hàng NVBH (việc chính của Quản lý)
   // Lần sửa 58 — menu danh mục: bấm ra ngoài / Esc / mở menu tài khoản -> tự đóng
   const { open: menuOpen, setOpen: setMenuOpen, toggle: toggleMenu, rootRef: menuRootRef, hoverProps: menuHoverProps } = useDropdownMenu("manager-tabs");
   // Lần sửa 64 — số đề xuất cập nhật khách (NVBH gửi) đang chờ duyệt: hiện cạnh mục
@@ -3236,17 +3236,17 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
     {
       label: "HÔM NAY",
       items: [
-        { id: "summary", label: "Tổng hợp ngày", icon: ClipboardList },
         { id: "orders", label: "Đơn hàng NVBH", icon: Truck },
+        { id: "summary", label: "Tổng hợp kiểm kho", icon: ClipboardList }, // Lần sửa 108 — đổi tên cho rõ (màn này là số kiểm kho trong ngày)
         { id: "lookup", label: "Tra cứu vị trí", icon: MapPin },
       ],
     },
     {
       label: "BÁN HÀNG & TIỀN",
       items: [
-        { id: "revenue", label: "Doanh số bán hàng", icon: BarChart3 },
+        { id: "revenue", label: "Doanh số (theo file Excel)", icon: BarChart3 }, // Lần sửa 108 — phân biệt với báo cáo theo đơn trong app
         { id: "skuorders", label: "Tra mặt hàng theo đơn", icon: Search }, // Lần sửa 94
-        { id: "monthorders", label: "Báo cáo đơn theo tháng", icon: ClipboardList }, // Lần sửa 96
+        { id: "monthorders", label: "Doanh số theo đơn trong app", icon: ClipboardList }, // Lần sửa 96; 108 đổi tên
         { id: "congno", label: "Công nợ", icon: CircleDollarSign },
         { id: "thuchi", label: "Thu chi", icon: Wallet },
         ...(isDirector ? [] : [{ id: "sfimport", label: "Nhập file bán hàng", icon: Upload }]),
@@ -3290,8 +3290,8 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
   const goTab = (id) => { setTab(id); setSheetOpen(false); setMenuOpen(false); try { window.scrollTo(0, 0); } catch (e) {} };
   // 4 mục dùng nhiều nhất hiện ở thanh dưới điện thoại
   const barItems = [
-    { id: "summary", label: "Hôm nay", icon: ClipboardList },
     { id: "orders", label: "Đơn hàng", icon: Truck },
+    { id: "summary", label: "Kiểm kho", icon: ClipboardList }, // Lần sửa 108
     { id: "congno", label: "Công nợ", icon: CircleDollarSign },
     { id: "stockbook", label: "Tồn kho", icon: Package },
   ];
@@ -3323,11 +3323,11 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
 
   // Nhập tồn kho: hiện thẳng màn hình kiểm kho (giống người kiểm kho), không cần dùng tabs
   if (tab === "checkin" && isSuper) {
-    return <CheckerView profile={profile} onBack={() => setTab("summary")} onLogout={onLogout} onProfileUpdate={onProfileUpdate} />;
+    return <CheckerView profile={profile} onBack={() => setTab("orders")} onLogout={onLogout} onProfileUpdate={onProfileUpdate} />;
   }
   // Ra đơn: Quản lý cấp cao tự ra đơn bằng chính tài khoản của mình (VD nhận đơn qua điện thoại)
   if (tab === "sell" && isSuper) {
-    return <SalesView profile={profile} onBack={() => setTab("summary")} onLogout={onLogout} onProfileUpdate={onProfileUpdate} />;
+    return <SalesView profile={profile} onBack={() => setTab("orders")} onLogout={onLogout} onProfileUpdate={onProfileUpdate} />;
   }
 
   return (
@@ -7564,6 +7564,18 @@ function AccountsTab({ profile }) {
         )}
       </Card>
 
+      {(() => { // Lần sửa 108 — NVBH trùng chữ ở cột "NV" khi xuất Excel
+        const clash = exportNameClashes(accounts.filter((a) => a.role === "sales" && !a.disabled));
+        return clash.length ? (
+          <Card style={{ marginBottom: 16, borderColor: COLORS.warn + "88", background: COLORS.warn + "10" }}>
+            <div data-testid="export-name-clash" style={{ fontSize: 12.5, color: COLORS.text, lineHeight: 1.6 }}>
+              <b>⚠ Cột "NV" khi xuất Excel đang bị trùng:</b>{" "}
+              {clash.map((c) => `"${c.nv}" = ${c.names.join(" / ")}`).join(" · ")}.
+              {" "}Bấm sửa từng người, điền ô <b>"Tên dữ liệu xuất"</b> khác nhau (VD "TÂM Đ1", "TÂM Đ2"). Chỉ áp cho đơn ra sau khi sửa.
+            </div>
+          </Card>
+        ) : null;
+      })()}
       <Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "10px 16px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 12, color: COLORS.muted, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
           <Users size={14} /> DANH SÁCH TÀI KHOẢN — {accounts.length}
@@ -8363,6 +8375,19 @@ function lastNameWord(name) {
   if (!s) return "";
   const parts = s.split(/\s+/);
   return parts[parts.length - 1];
+}
+// Lần sửa 108 — các nhóm NVBH khác nhau nhưng ra CÙNG 1 chữ ở cột "NV" khi xuất Excel (VD 2 người tên cuối "Tâm"
+// mà chưa đặt "Tên dữ liệu xuất") -> trả [{ nv, names: [...] }]. `items`: [{ username, name, exportName }].
+function exportNameClashes(items) {
+  const m = new Map();
+  (items || []).forEach((x) => {
+    if (!x || !x.username) return;
+    const nv = String(x.exportName || lastNameWord(x.name) || "").trim().toLocaleUpperCase("vi");
+    if (!nv) return;
+    if (!m.has(nv)) m.set(nv, new Map());
+    m.get(nv).set(x.username, x.name || x.username);
+  });
+  return Array.from(m.entries()).filter(([, u]) => u.size > 1).map(([nv, u]) => ({ nv, names: Array.from(u.values()) }));
 }
 // "Bằng chữ" trên phiếu in — đọc số tiền thành chữ tiếng Việt (VD 1.786.000
 // -> "Một triệu bảy trăm tám mươi sáu nghìn đồng chẵn"), theo đúng cách đọc
@@ -11639,6 +11664,7 @@ function OrdersAdminTab({ profile, isSuper }) {
   // Lần sửa 26 — đổi sang thẻ dọc trên điện thoại. Lần sửa 77 — cả máy tính bảng dựng đứng (<= 900px):
   // hàng ngang có cột mã đơn + NVBH cố định, màn 744–834px không còn chỗ cho tên khách.
   const isMobile = useIsMobile(900);
+  const isPhone = useIsMobile(767); // Lần sửa 108 — điện thoại: thanh thao tác dính đáy màn hình (cùng mốc với thanh điều hướng dưới)
   // Lần sửa 49 — cần danh mục SKU (để biết quy cách "1 thùng bao nhiêu
   // chai/gói") lúc xuất Excel, tính cột "SL QUY THÙNG" — dùng "kho chung"
   // (CatalogContext, Lần sửa 43) thay vì tự tải riêng, vì tab này trước giờ
@@ -11866,6 +11892,14 @@ function OrdersAdminTab({ profile, isSuper }) {
     if (failGroups.length > 0) alert("Lưu thất bại cho: " + failGroups.join(", ") + " — thử lại.");
     await reload(true); // Lần sửa 100 — tải lại ÊM (không hiện "Đang tải" thay danh sách) để không bị nhảy lên đầu trang
   }
+  // Lần sửa 108 — đánh dấu đã lấy từ 5 đơn trở lên: hỏi lại (NVBH sẽ không tự sửa/huỷ được các đơn này)
+  function markTakenAsk(ids) {
+    if (ids.length >= 5) {
+      const nv = new Set(orders.filter((o) => ids.includes(o.orderId)).map((o) => o.salesUsername)).size;
+      if (!window.confirm(`Đánh dấu ĐÃ LẤY ${ids.length} đơn của ${nv} NVBH?\n\nNVBH sẽ không tự sửa / huỷ các đơn này nữa (gỡ được bằng "Mở khoá đã chọn").`)) return;
+    }
+    return markTaken(ids);
+  }
   function markTaken(ids) {
     return patchOrdersByIds(ids, () => ({ taken: true, takenAt: new Date().toISOString(), takenByUsername: profile.username, takenByName: profile.name }));
   }
@@ -11982,6 +12016,10 @@ function OrdersAdminTab({ profile, isSuper }) {
     const header = ["NV", "ĐỊA CHỈ", "MÃ KH", "TÊN SẢN PHẨM", "ĐVT", "Đ.GIÁ", "S.LƯỢNG", "T.TIỀN", "KM", "GHI CHÚ", "MÃ SP", "MÃ TX", "TÊN KH", "MÃ ĐƠN (HỆ THỐNG)", "SL QUY THÙNG"];
     const rows = [];
     const ordersToExport = selectedOrders;
+    { // Lần sửa 108 — 2 NVBH khác nhau ra cùng 1 chữ ở cột "NV" -> file Excel bị lẫn người
+      const clash = exportNameClashes(ordersToExport.map((o) => ({ username: o.salesUsername, name: o.salesName, exportName: o.salesExportName })));
+      if (clash.length && !window.confirm(`Cột "NV" trong file sẽ bị TRÙNG giữa các NVBH khác nhau:\n${clash.map((c) => `• "${c.nv}": ${c.names.join(", ")}`).join("\n")}\n\nNên nhờ Quản lý cấp cao đặt "Tên dữ liệu xuất" riêng cho từng người (tab Tài khoản) — chỉ áp cho đơn ra SAU khi đặt.\n\nVẫn xuất file?`)) return;
+    }
     ordersToExport.forEach((o) => {
       // Cột "NV" ưu tiên dùng ĐÚNG "Tên dữ liệu xuất" đã chụp lại lúc tạo
       // đơn (o.salesExportName, do Quản lý tự đặt riêng cho từng NVBH ở tab
@@ -12112,13 +12150,19 @@ function OrdersAdminTab({ profile, isSuper }) {
             chỉ xuất ĐÚNG các đơn đang tích chọn (không còn xuất hết cả
             ngày mỗi lần bấm) — muốn xuất cả ngày thì bấm "chọn tất cả" ở
             đầu danh sách bên dưới rồi mới bấm nút này. */}
+        {isPhone ? (
+          <div data-testid="phone-select-hint" style={{ fontSize: 12, color: COLORS.muted, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${COLORS.border}` }}>
+            Đã chọn {selectedOrders.length}/{visibleOrders.length} đơn — nút Xuất Excel / In / Đã lấy nằm ở thanh dưới cùng màn hình.
+          </div>
+        ) : (
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginTop: 10, paddingTop: 10, borderTop: `1px solid ${COLORS.border}` }}>
           <span style={{ fontSize: 12, color: COLORS.muted }}>Đã chọn {selectedOrders.length}/{visibleOrders.length} đơn{filtersActive ? ` (đang lọc, cả ngày ${orders.length})` : ""}:</span>
           <Btn variant="ghost" onClick={exportExcel} disabled={selectedOrders.length === 0}><Download size={15} /> Xuất Excel đã chọn ({selectedOrders.length})</Btn>
           <Btn variant="ghost" onClick={() => setPrintOrders(selectedOrders)} disabled={selectedOrders.length === 0}>🖨 In đã chọn ({selectedOrders.length})</Btn>
-          <Btn variant="ghost" onClick={() => markTaken(selectedVisibleIds)} disabled={selectedVisibleIds.length === 0}><Lock size={14} /> Đánh dấu đã lấy ({selectedVisibleIds.length})</Btn>
+          <Btn variant="ghost" onClick={() => markTakenAsk(selectedVisibleIds)} disabled={selectedVisibleIds.length === 0}><Lock size={14} /> Đánh dấu đã lấy ({selectedVisibleIds.length})</Btn>
           <Btn variant="ghost" onClick={() => unmarkTaken(selectedVisibleIds)} disabled={selectedVisibleIds.length === 0}><LockOpen size={14} /> Mở khoá đã chọn</Btn>
         </div>
+        )}
       </Card>
 
       {pendingRequests.length > 0 && (
@@ -12142,6 +12186,12 @@ function OrdersAdminTab({ profile, isSuper }) {
 
       {/* Lần sửa 62 — thẻ cảnh báo lệch giá gói trong 1 khung cao cố định, cuộn lên/xuống;
           bấm "+" để mở hết, "−" để thu gọn lại (trước đây lệch nhiều là dài cả trang). */}
+      {warnings.length === 0 ? (
+        // Lần sửa 108 — không có lệch giá: 1 dòng gọn (trước đây cả khung to đẩy danh sách đơn xuống dưới)
+        <div data-testid="price-warnings-none" style={{ marginBottom: 12, padding: "8px 14px", fontSize: 12.5, color: COLORS.muted, display: "flex", alignItems: "center", gap: 6 }}>
+          <Check size={14} color={COLORS.success} /> Không có dòng nào lệch giá{backlogDays ? "" : " trong ngày này"}.
+        </div>
+      ) : (
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.muted, marginBottom: 10, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <AlertTriangle size={15} color={COLORS.danger} />
@@ -12172,6 +12222,7 @@ function OrdersAdminTab({ profile, isSuper }) {
         )}
         {warnings.length > WARN_COLLAPSED_ROWS && !warnExpanded && <div style={{ fontSize: 11, color: COLORS.muted, marginTop: 6 }}>Cuộn / vuốt trong khung để xem thêm, hoặc bấm "+ Xem hết".</div>}
       </Card>
+      )}
 
       <Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "10px 16px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 12, color: COLORS.muted, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
@@ -12316,6 +12367,25 @@ function OrdersAdminTab({ profile, isSuper }) {
           onRequestEdit={() => {}}
           onCancelEditRequest={() => {}}
         />
+      )}
+      {isPhone && selectedOrders.length > 0 && (
+        <>
+          <div style={{ height: 72 }} />
+          {/* Lần sửa 108 — thanh thao tác dính đáy (nằm ngay trên thanh điều hướng dưới), luôn trong tầm ngón cái */}
+          <div data-testid="phone-action-bar" style={{ position: "fixed", left: 8, right: 8, bottom: "calc(64px + env(safe-area-inset-bottom))", zIndex: 99, background: COLORS.panel, border: `1px solid ${COLORS.accent}55`, borderRadius: 12, boxShadow: "0 6px 24px rgba(15,23,42,0.18)", padding: "6px 6px 6px 10px", display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ fontSize: 11.5, color: COLORS.muted, lineHeight: 1.2, minWidth: 44 }}><b style={{ fontSize: 15, color: COLORS.accent }}>{selectedOrders.length}</b><br />đã chọn</div>
+            {[
+              { k: "excel", label: "Excel", icon: <Download size={16} />, on: exportExcel },
+              { k: "print", label: "In", icon: <span style={{ fontSize: 15 }}>🖨</span>, on: () => setPrintOrders(selectedOrders) },
+              { k: "take", label: "Đã lấy", icon: <Lock size={16} />, on: () => markTakenAsk(selectedVisibleIds) },
+              { k: "untake", label: "Mở khoá", icon: <LockOpen size={16} />, on: () => unmarkTaken(selectedVisibleIds) },
+            ].map((b) => (
+              <button key={b.k} data-testid={"bar-act-" + b.k} onClick={b.on} style={{ flex: 1, minWidth: 0, minHeight: 48, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, background: b.k === "print" ? COLORS.accent : "transparent", color: b.k === "print" ? COLORS.onAccent : COLORS.text, border: b.k === "print" ? "none" : `1px solid ${COLORS.border}`, borderRadius: 9, fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
+                {b.icon}{b.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
       {printOrders && <OrderPrintModal orders={printOrders} onClose={() => setPrintOrders(null)} onPrinted={handlePrinted} />}
       {importOpen && (
@@ -13127,7 +13197,7 @@ function ThuChiTab({ profile, isSuper }) {
           SỔ THU CHI TRONG NGÀY — {entries.length} dòng
         </div>
         <div data-testid="thuchi-decoupled-note" style={{ padding: "6px 16px", fontSize: 11.5, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>
-          Tiền bán hàng không còn tự đưa vào Thu chi (từ lần sửa 81) — xem doanh số và công nợ ở mục "Doanh số bán hàng" / "Công nợ" (lấy từ file Excel). Sổ này chỉ gồm các khoản nhập tay.
+          Tiền bán hàng không còn tự đưa vào Thu chi (từ lần sửa 81) — xem doanh số và công nợ ở mục "Doanh số (theo file Excel)" / "Công nợ" (lấy từ file Excel). Sổ này chỉ gồm các khoản nhập tay.
         </div>
         {syncNote && <div style={{ padding: "8px 16px", fontSize: 12, color: COLORS.accent, borderBottom: `1px solid ${COLORS.border}` }}>{syncNote}{isSuper && /trước khi có cách tính mới/.test(syncNote) && <> <button onClick={() => setRecalc({})} style={{ background: "none", border: "none", color: COLORS.info, cursor: "pointer", fontSize: 12, padding: 0, textDecoration: "underline" }}>Tính lại các ngày cũ theo tiền thực thu</button></>}</div>}
         {entries.some((e) => e.isAuto && /nhập tay/.test(e.note || "")) && (
@@ -13957,6 +14027,10 @@ function SalesImportTab({ onGoRevenue }) {
   const canApply = !!plan && !plan.error && (writable.length > 0 || (removeMissing && plan.missing.length > 0));
 
   async function apply() {
+    { // Lần sửa 108 — ngày lệch xa hôm nay: hỏi lại trước khi ghi
+      const diff = Math.round((Date.parse(date + "T12:00:00Z") - Date.parse(todayStr() + "T12:00:00Z")) / 86400000);
+      if ((diff > 0 || diff < -3) && !window.confirm(`File sẽ ghi vào ngày ${fmtDate(date)} — ${diff > 0 ? "ngày CHƯA TỚI" : "cách hôm nay " + (-diff) + " ngày"}.\n\nĐúng ngày của file chưa? Bấm OK để ghi, Huỷ để sửa ngày.`)) return;
+    }
     setStage("applying"); setError("");
     const soBase = "so:" + date, lnBase = "soln:" + date;
     try {
@@ -14017,6 +14091,18 @@ function SalesImportTab({ onGoRevenue }) {
               <Btn variant="ghost" onClick={reset} disabled={stage === "applying"}>Chọn file khác</Btn>
             </div>
             {!/^\d{4}-\d{2}-\d{2}$/.test(date) && <div style={{ fontSize: 12.5, color: COLORS.danger, marginBottom: 10 }}>Không đọc được ngày từ tên file — chọn ngày của file ở ô trên.</div>}
+            {/* Lần sửa 108 — ngày lấy theo TÊN FILE: đặt nhầm tên là ghi sai ngày -> hiện to + cảnh báo khi lệch xa hôm nay */}
+            {/^\d{4}-\d{2}-\d{2}$/.test(date) && (() => {
+              const diff = Math.round((Date.parse(date + "T12:00:00Z") - Date.parse(todayStr() + "T12:00:00Z")) / 86400000);
+              const far = diff > 0 || diff < -3;
+              return (
+                <div data-testid="sf-date-banner" style={{ fontSize: 13.5, marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: (far ? COLORS.danger : COLORS.accent) + "14", border: `1px solid ${(far ? COLORS.danger : COLORS.accent)}55`, color: COLORS.text }}>
+                  Sẽ ghi vào ngày <b style={{ fontSize: 17, color: far ? COLORS.danger : COLORS.accent }}>{fmtDate(date)}</b>
+                  {diff === 0 ? " (hôm nay)" : diff < 0 ? ` (${-diff} ngày trước)` : ` (${diff} ngày SAU hôm nay)`}
+                  {far && <div data-testid="sf-date-warn" style={{ fontSize: 12.5, color: COLORS.danger, marginTop: 4 }}>⚠ Ngày này {diff > 0 ? "chưa tới" : "cách hôm nay hơn 3 ngày"}. Kiểm tra lại tên file — nếu sai, sửa ở ô "Ngày của file" phía trên trước khi ghi.</div>}
+                </div>
+              );
+            })()}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
               <SfStat label="Thu TM" value={sfMoney(fileSums.TM[1])} sub={`${fileSums.TM[0]} đơn`} color={SF_STATUS_COLOR.TM} />
