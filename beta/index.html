@@ -7,7 +7,7 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script src="libs.js?v=6f27f375"></script>
+<script src="libs.js?v=7c2033f9"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
   /* Lần sửa 75 — điện thoại / máy tính bảng (màn cảm ứng):
@@ -575,7 +575,7 @@ function kvErrorText(res, fallback) {
   if (code === "LAST_SUPER") return "Phải còn ít nhất 1 tài khoản Quản lý cấp cao đang hoạt động — không hạ quyền / tạm khoá / xoá được tài khoản này.";
   if (code === "IS_PAID") return "Đơn này ĐÃ được đánh dấu thu tiền (có thể vừa được thu ở máy khác) — không sửa/huỷ/Rớt được. Muốn sửa thì nhờ Quản lý cấp cao bấm \"Hoàn tác (chuyển lại còn nợ)\" trước.";
   if (code === "WRONG_DAY") return "Chỉ lưu được cho ngày hôm nay (theo giờ máy chủ). Kiểm tra lại ngày đang chọn, hoặc tải lại trang nếu vừa qua nửa đêm.";
-  if (code === "LOCKED") return "Đơn này đã được Quản lý đánh dấu \"đã lấy dữ liệu\" — cần gửi yêu cầu xin sửa và được duyệt trước.";
+  if (code === "LOCKED") return "Đơn này đã được Quản lý đánh dấu \"Đã lấy\" — bấm \"Xin sửa đơn\" và chờ duyệt rồi mới sửa / huỷ được.";
   // Lần sửa 65
   if (code === "IS_DROPPED") return "Đơn này đã bị Rớt — không sửa/huỷ được nữa. Nhờ Quản lý cấp cao nếu cần.";
   if (code === "OLD_DAY") return "Đơn của ngày trước — NVBH không tự sửa/huỷ được nữa, nhờ Quản lý cấp cao sửa giúp.";
@@ -589,13 +589,13 @@ function kvErrorText(res, fallback) {
   // Lần sửa 73
   if (code === "BAD_CASE_DISCOUNT") return "Giảm giá theo thùng của 1 dòng không hợp lệ (bằng/vượt tiền của dòng đó, hoặc không khớp mức giảm × số thùng) — sửa lại số lượng hoặc mức giảm của dòng đó.";
   if (code === "PRINTED") return "Đơn này đã được in giao hàng — NVBH không tự huỷ được nữa. Bấm \"Xin sửa đơn\" để Quản lý duyệt, hoặc nhờ Quản lý huỷ giúp.";
-  if (code === "INVALID") return "Dữ liệu gửi lên không hợp lệ.";
+  if (code === "INVALID") return "Dữ liệu gửi lên không hợp lệ — tải lại trang rồi thử lại. Vẫn bị thì chụp màn hình gửi Quản lý.";
   if (code === "USE_CHANGE_PW") return "Đổi mật khẩu của chính bạn ở menu tài khoản → \"Đổi mật khẩu\" (cần nhập mật khẩu hiện tại).";
   if (code === "NOT_FOUND") return "Không tìm thấy dòng dữ liệu này nữa (có thể vừa bị xoá hoặc thay đổi ở nơi khác) — tải lại để xem bản mới nhất.";
   if (code === "DAY_LOCKED") return "Ngày này đã được Quản lý chốt kiểm kho — không lưu thêm được.";
-  if (code === "ITEM_TOO_LARGE") return "Dữ liệu quá lớn so với giới hạn 1 ô của Google Sheet — hãy tách bớt (VD chia đơn thành 2 đơn).";
+  if (code === "ITEM_TOO_LARGE") return "Đơn / danh sách này quá dài để lưu 1 lần — tách bớt (VD chia thành 2 đơn) rồi lưu lại.";
   if (code === "CONFLICT") return "Đã có dòng khác trùng vị trí/SKU này.";
-  if (code === "DUPLICATE") return "Dữ liệu này đã tồn tại.";
+  if (code === "DUPLICATE") return "Dữ liệu này đã có rồi (có thể vừa được lưu ở máy khác) — tải lại để xem.";
   if (code === "NOTE_REQUIRED") return "Phiếu điều chỉnh cần có ghi chú (mã đơn tay, lý do hư hỏng, ngày kiểm...).";
   if (code === "ALREADY_REVERSED") return "Phiếu này đã được huỷ (đảo) rồi — tải lại danh sách.";
   if (code === "CANNOT_REVERSE_REVERSAL") return "Phiếu đảo không huỷ lại được — cần thì lập phiếu điều chỉnh mới.";
@@ -3189,7 +3189,7 @@ function AccountMenu({ profile, onProfileUpdate, onLogout }) {
             <Download size={15} /> Cài app về máy
           </button>
           <button onClick={handleLogout} style={{ ...menuItemStyle, color: COLORS.danger }}>
-            <LogOut size={15} /> Thoát
+            <LogOut size={15} /> Đăng xuất
           </button>
         </div>
       )}
@@ -7209,7 +7209,7 @@ function ForcedPasswordChange({ profile, onDone, onLogout }) {
           <PasswordChangeForm profile={profile} forced onDone={onDone} />
         </Card>
         <div style={{ textAlign: "center", marginTop: 14 }}>
-          <LinkButton underline onClick={onLogout} style={{ fontSize: FONT.base }}>Thoát, đăng nhập tài khoản khác</LinkButton>
+          <LinkButton underline onClick={onLogout} style={{ fontSize: FONT.base }}>Đăng xuất, đăng nhập tài khoản khác</LinkButton>
         </div>
       </div>
     </div>
@@ -8239,8 +8239,8 @@ function OrderStatusBadges({ o, hideTaken }) {
     <>
       {o.createdByAdmin && (
         <Pill
-          title={`Admin tạo hộ${o.createdByAdminName ? " — " + o.createdByAdminName : ""}`} neutral>
-          <IdCard size={10} /> Admin tạo hộ
+          title={`QL cấp cao tạo hộ${o.createdByAdminName ? " — " + o.createdByAdminName : ""}`} neutral>
+          <IdCard size={10} /> QL cấp cao tạo hộ
         </Pill>
       )}
       {!hideTaken && o.taken && o.editRequestStatus !== "approved" && (
@@ -9914,7 +9914,7 @@ function OrderPrintModal({ orders: allOrders, onClose, onPrinted }) {
       saved.forEach((o) => { if (!updated[o.orderId] && prevPrintCount(cur(o)) >= 1) stamps[o.orderId] = { kind: "reprint", n: 0, firstAt: cur(o).printedAt, firstBy: cur(o).printedByName }; });
       setMarking(false);
       if (failed) {
-        const go = window.confirm(`Không ghi nhận được lần in cho ${failed}/${saved.length} đơn (mất mạng, hết phiên đăng nhập, hoặc máy chủ chưa cập nhật Code.gs bản mới).\n\nVẫn in? Các đơn đó sẽ in KHÔNG kèm số lần in.`);
+        const go = window.confirm(`Không ghi nhận được lần in cho ${failed}/${saved.length} đơn (mất mạng hoặc hết phiên đăng nhập).\n\nVẫn in? Các đơn đó sẽ in KHÔNG kèm số lần in.`);
         if (!go) { setKnown((k) => ({ ...k, ...updated })); return null; }
       }
     }
@@ -10056,7 +10056,7 @@ function OrderPrintModal({ orders: allOrders, onClose, onPrinted }) {
 
 /* ---------------------------------------------------------------
    CHI TIẾT 1 ĐƠN ĐÃ LƯU (Lần sửa 17) — NV bấm vào 1 đơn trong "ĐƠN CỦA
-   TÔI" để xem lại, và nếu đơn còn TRONG NGÀY hôm nay thì sửa/hủy được luôn
+   TÔI" để xem lại, và nếu đơn còn TRONG NGÀY hôm nay thì sửa/huỷ được luôn
    (đơn của ngày khác đã "chốt sổ", chỉ xem — muốn sửa nhờ Quản lý cấp cao).
    Cũng là nơi bấm "Tạo lại đơn giống" cho khách quen mua lặp lại.
 ---------------------------------------------------------------- */
@@ -10216,7 +10216,7 @@ function OrderDetailModal({ order, editable, locked, skus, vehicles, onClose, on
             lại chi tiết đơn. */}
         {order.createdByAdmin && (
           <div style={{ fontSize: FONT.sm, color: COLORS.text, background: COLORS.panel2, borderRadius: 8, padding: "8px 10px", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-            <IdCard size={13} /> Đơn này do Admin tạo hộ{order.createdByAdminName ? ` (${order.createdByAdminName})` : ""}.
+            <IdCard size={13} /> Đơn này do Quản lý cấp cao tạo hộ{order.createdByAdminName ? ` (${order.createdByAdminName})` : ""}.
           </div>
         )}
 
@@ -10321,7 +10321,7 @@ function OrderDetailModal({ order, editable, locked, skus, vehicles, onClose, on
               {canEditNow && <Btn onClick={startEdit}><Pencil size={14} /> Sửa đơn</Btn>}
               {onDuplicate && <Btn variant="ghost" onClick={() => onDuplicate(order)}><Copy size={14} /> Tạo lại đơn giống</Btn>}
               <Btn variant="ghost" onClick={() => onPrint(order)}>🖨 {order.printed ? "In lại" : "In phiếu"}</Btn>
-              {canEditNow && onCancelOrder && <Btn variant="danger" onClick={clickCancelOrder}><Trash2 size={14} /> {adminMode ? "Xoá đơn" : "Hủy đơn"}</Btn>}
+              {canEditNow && onCancelOrder && <Btn variant="danger" onClick={clickCancelOrder}><Trash2 size={14} /> {adminMode ? "Xoá đơn" : "Huỷ đơn"}</Btn>}
             </div>
           </>
         ) : (
@@ -10805,7 +10805,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
         if (prev) {
           pendingOrderUidRef.current = { uid: makeUid(), sig };
           setTodayOrders((l) => (l.some((o) => o.uid === prev.uid) ? l : [...l, prev]));
-          setErr(`Lần bấm "Lưu đơn" trước (bị báo lỗi mạng) THỰC RA ĐÃ LƯU thành đơn #${String(prev.seq).padStart(2, "0")} — ${prev.customerName} — ${formatVND(prev.grandTotal)}, với nội dung CŨ. Phần bạn vừa sửa CHƯA lưu. Nếu đây là cùng 1 đơn: mở đơn #${String(prev.seq).padStart(2, "0")} ở "Đơn của tôi" để sửa (rồi bấm "Xoá & tạo đơn mới"). Nếu là đơn khác thật: bấm "Lưu đơn" lần nữa.`);
+          setErr(`Lần bấm "Lưu đơn" trước bị báo lỗi mạng nhưng thật ra đã lưu thành đơn #${String(prev.seq).padStart(2, "0")} (${prev.customerName} — ${formatVND(prev.grandTotal)}) với nội dung cũ; phần bạn vừa sửa chưa lưu. Cùng 1 đơn: mở đơn #${String(prev.seq).padStart(2, "0")} ở "Đơn của tôi" để sửa. Đơn khác: bấm "Lưu đơn" lần nữa.`);
           return;
         }
       }
@@ -10868,14 +10868,14 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
   // trường hợp gọi thẳng hàm.
   async function cancelMyOrder(o) {
     if (o.orderDate !== date) return;
-    if (o.taken && o.editRequestStatus !== "approved") { alert("Đơn này đã được lấy dữ liệu — cần Quản lý duyệt yêu cầu xin sửa trước khi hủy."); return; }
+    if (o.taken && o.editRequestStatus !== "approved") { alert("Đơn này đã được Quản lý đánh dấu \"Đã lấy\" — bấm \"Xin sửa đơn\" và chờ duyệt rồi mới huỷ được."); return; }
     if (o.paid || o.dropped) { alert(kvErrorText({ code: o.paid ? "IS_PAID" : "IS_DROPPED" })); return; } // Lần sửa 65
-    if (!window.confirm(`Hủy đơn ${o.orderId}${o.customerName ? " của " + o.customerName : ""}? Không thể hoàn tác.`)) return;
+    if (!window.confirm(`Huỷ đơn ${o.orderId}${o.customerName ? " của " + o.customerName : ""}? Không thể hoàn tác.`)) return;
     // Lần sửa 50–51 — máy chủ tự xoá trong khoá và tự kiểm tra lại khoá
     // "đã lấy dữ liệu" trên bản MỚI NHẤT (không tin bản cũ đang mở trên máy).
     const res = await listUpdate(ordersBase(date, profile.username), [{ op: "remove", match: { orderId: o.orderId }, guard: "editable" }]);
     // NOT_FOUND = đơn đã không còn (VD lượt tự thử lại sau khi lượt đầu đã xoá xong) -> coi như đã huỷ.
-    if (!res.ok || (!res.results[0]?.ok && res.results[0]?.code !== "NOT_FOUND")) { alert(kvErrorText(res, "Hủy đơn thất bại, thử lại.")); return; }
+    if (!res.ok || (!res.results[0]?.ok && res.results[0]?.code !== "NOT_FOUND")) { alert(kvErrorText(res, "Huỷ đơn thất bại, thử lại.")); return; }
     const next = res.list || [];
     setTodayOrders(next);
     if (viewDate === date) setViewOrders(next);
@@ -11260,8 +11260,8 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
                   {/* Lần sửa 34 — cho NVBH biết đơn này do Admin tự ra đơn hộ
                       (chọn NVBH), không phải chính NVBH tự tạo. */}
                   {o.createdByAdmin && (
-                    <Pill title={`Admin tạo hộ${o.createdByAdminName ? " — " + o.createdByAdminName : ""}`} neutral>
-                      <IdCard size={10} /> Admin tạo hộ
+                    <Pill title={`QL cấp cao tạo hộ${o.createdByAdminName ? " — " + o.createdByAdminName : ""}`} neutral>
+                      <IdCard size={10} /> QL cấp cao tạo hộ
                     </Pill>
                   )}
                   {/* Lần sửa 32 — cho NVBH biết ngay đơn đã bị Quản lý "lấy dữ liệu"
@@ -11468,7 +11468,7 @@ function AdminCreateOrderModal({ profile, onClose, onCreated }) {
         if (prev) {
           pendingOrderUidRef.current = { uid: makeUid(), sig, salesUsername };
           onCreated && onCreated(prev);
-          setErr(`Lần bấm "Lưu đơn" trước (bị báo lỗi mạng) THỰC RA ĐÃ LƯU thành đơn ${prev.orderId} — ${prev.customerName} — ${formatVND(prev.grandTotal)} (cho ${prev.salesName || prev.salesUsername}), với nội dung CŨ. Phần vừa sửa CHƯA lưu. Nếu là cùng 1 đơn: đóng form rồi sửa đơn ${prev.orderId} trong danh sách. Nếu là đơn khác thật: bấm "Lưu đơn" lần nữa.`);
+          setErr(`Lần bấm "Lưu đơn" trước bị báo lỗi mạng nhưng thật ra đã lưu thành đơn ${prev.orderId} (${prev.customerName} — ${formatVND(prev.grandTotal)}, cho ${prev.salesName || prev.salesUsername}) với nội dung cũ; phần vừa sửa chưa lưu. Cùng 1 đơn: đóng form rồi sửa đơn ${prev.orderId} trong danh sách. Đơn khác: bấm "Lưu đơn" lần nữa.`);
           return;
         }
       }
@@ -11519,7 +11519,7 @@ function AdminCreateOrderModal({ profile, onClose, onCreated }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
           <div>
             <div style={{ fontSize: FONT.md, fontWeight: 700, color: COLORS.text }}>Tạo đơn mới — chọn NVBH</div>
-            <div style={{ fontSize: FONT.sm, color: COLORS.muted }}>{fmtDate(date)} · Admin tạo hộ{orderCount > 0 ? ` · đã tạo ${orderCount} đơn trong lần mở này` : ""}</div>
+            <div style={{ fontSize: FONT.sm, color: COLORS.muted }}>{fmtDate(date)} · QL cấp cao tạo hộ{orderCount > 0 ? ` · đã tạo ${orderCount} đơn trong lần mở này` : ""}</div>
           </div>
           {/* Lần sửa 46 — khoá hết các cách đóng modal (backdrop, nút X, nút
               "Đóng" ở dưới) trong lúc đang lưu (saving=true), để người dùng
@@ -12019,11 +12019,11 @@ function OrdersAdminTab({ profile, isSuper }) {
     if (!isSuper) return;
     // Lần sửa 57 — cảnh báo rõ nếu đơn đã thu tiền / đã lấy dữ liệu
     const warn = [o.paid ? "• Đơn này ĐÃ THU TIỀN — xoá sẽ mất luôn khoản đã thu trong Công nợ/Thu chi." : "", o.taken ? "• Đơn đã được lấy dữ liệu (đã xuất Excel)." : ""].filter(Boolean).join("\n");
-    const ok1 = window.confirm(`Xóa đơn ${o.orderId}${o.customerName ? " của " + o.customerName : ""}? Không thể hoàn tác.${warn ? "\n\n" + warn : ""}`);
+    const ok1 = window.confirm(`Xoá đơn ${o.orderId}${o.customerName ? " của " + o.customerName : ""}? Không thể hoàn tác.${warn ? "\n\n" + warn : ""}`);
     if (!ok1) return;
     if (o.paid && !window.confirm(`Xác nhận lần 2: xoá đơn ĐÃ THU TIỀN ${o.orderId}?`)) return;
     const res = await listUpdate(ordersBase(o.orderDate || date, o.salesUsername), [{ op: "remove", match: { orderId: o.orderId } }], { returnList: false });
-    if (res.ok && (res.results[0]?.ok || res.results[0]?.code === "NOT_FOUND")) reload(); else alert(kvErrorText(res, "Xóa đơn thất bại, thử lại."));
+    if (res.ok && (res.results[0]?.ok || res.results[0]?.code === "NOT_FOUND")) reload(); else alert(kvErrorText(res, "Xoá đơn thất bại, thử lại."));
   }
 
   const [warnExpanded, setWarnExpanded] = useState(false); // Lần sửa 62
@@ -12417,8 +12417,8 @@ function OrdersAdminTab({ profile, isSuper }) {
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   <IconButton label="In phiếu đơn này" onClick={() => setPrintOrders([o])} style={{ flex: 1, minHeight: 40, fontSize: FONT.base }}>🖨 In</IconButton>
                   {isSuper && (
-                    <IconButton label="Xóa đơn" tone="danger" onClick={() => deleteOrder(o)} style={{ minHeight: 40, padding: "5px 12px", fontSize: FONT.base }}>
-                    <Trash2 size={14} /> Xóa
+                    <IconButton label="Xoá đơn" tone="danger" onClick={() => deleteOrder(o)} style={{ minHeight: 40, padding: "5px 12px", fontSize: FONT.base }}>
+                    <Trash2 size={14} /> Xoá
                     </IconButton>
                   )}
                 </div>
@@ -12441,7 +12441,7 @@ function OrdersAdminTab({ profile, isSuper }) {
                 <div style={{ fontSize: FONT.xs, color: COLORS.muted, width: 70, flexShrink: 0 }}>{routeDriverOnly(o)}</div>
                 <div style={{ fontSize: FONT.base, fontFamily: "'Roboto Mono', monospace", color: COLORS.text, width: 100, textAlign: "right", flexShrink: 0 }}>{formatVND(o.grandTotal)}</div>
                 <IconButton label="In phiếu đơn này" onClick={() => setPrintOrders([o])}>In</IconButton>
-                {isSuper && <IconButton label="Xóa đơn" tone="danger" onClick={() => deleteOrder(o)}><Trash2 size={14} /></IconButton>}
+                {isSuper && <IconButton label="Xoá đơn" tone="danger" onClick={() => deleteOrder(o)}><Trash2 size={14} /></IconButton>}
               </div>
             )}
             </React.Fragment>))}
@@ -12512,7 +12512,7 @@ function OrdersAdminTab({ profile, isSuper }) {
    đơn hàng ngày đó (lấy đúng tổng đơn của NVBH đó) — Quản lý chỉ cần sửa lại
    số nếu thu không đủ (thu thiếu/nợ lại), không phải tự gõ tay từ đầu. Các
    khoản thu/chi khác (thu nợ cũ, xăng xe, lương, sửa xe...) nhập tay bình
-   thường. Quyền sửa/xóa: người tạo dòng đó, HOẶC Quản lý cấp cao (mọi dòng),
+   thường. Quyền sửa/xoá: người tạo dòng đó, HOẶC Quản lý cấp cao (mọi dòng),
    HOẶC bất kỳ ai nếu dòng đó còn là "tự động" (chưa ai chỉnh, không có chủ
    sở hữu riêng) — chỉnh xong thì dòng đó thành của người vừa sửa.
 ----------------------------------------------------------------- */
@@ -13215,9 +13215,9 @@ function ThuChiTab({ profile, isSuper }) {
   async function deleteEntry(e) {
     if (!window.confirm(e.isAuto
       ? `Dòng "${e.category}" do hệ thống tự tính theo tiền đã thu — xoá xong, lần mở sau sẽ tự tính lại đúng số đó. Cần điều chỉnh số tiền thì thêm 1 dòng thu/chi riêng. Vẫn xoá?`
-      : `Xóa dòng "${e.category}" (${formatVND(e.amount)})? Không thể hoàn tác.`)) return;
+      : `Xoá dòng "${e.category}" (${formatVND(e.amount)})? Không thể hoàn tác.`)) return;
     const res = await listUpdate(`thuchi:${date}`, [{ op: "remove", match: { id: e.id } }], { returnList: false });
-    if (res.ok && res.results[0]?.ok) reload(); else alert(kvErrorText(res, "Xóa thất bại, thử lại."));
+    if (res.ok && res.results[0]?.ok) reload(); else alert(kvErrorText(res, "Xoá thất bại, thử lại."));
   }
 
   function exportExcel() {
@@ -13263,7 +13263,7 @@ function ThuChiTab({ profile, isSuper }) {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <input value={newCategoryText} onChange={(e) => setNewCategoryText(e.target.value)} placeholder="Tên hạng mục mới" style={{ ...selectStyle, flex: 1, minWidth: 120, width: "auto" }} />
                 <Btn onClick={handleAddCategory}>Thêm</Btn>
-                <Btn variant="ghost" onClick={() => { setAddingCategory(false); setNewCategoryText(""); }}>Hủy</Btn>
+                <Btn variant="ghost" onClick={() => { setAddingCategory(false); setNewCategoryText(""); }}>Huỷ</Btn>
               </div>
             ) : (
               <select
@@ -13327,7 +13327,7 @@ function ThuChiTab({ profile, isSuper }) {
                       <input value={editNote} onChange={(ev) => setEditNote(ev.target.value)} placeholder={e.isAuto ? "Ghi chú thêm" : "Ghi chú"} style={selectStyle} />
                       <div style={{ display: "flex", gap: 8 }}>
                         <Btn onClick={() => saveEdit(e)} style={{ flex: 1 }}><Check size={14} /> Lưu</Btn>
-                        <Btn variant="ghost" onClick={() => setEditingId(null)} style={{ flex: 1 }}>Hủy</Btn>
+                        <Btn variant="ghost" onClick={() => setEditingId(null)} style={{ flex: 1 }}>Huỷ</Btn>
                       </div>
                     </div>
                   ) : (
@@ -13339,7 +13339,7 @@ function ThuChiTab({ profile, isSuper }) {
                       <input data-testid="thuchi-edit-amount" inputMode="numeric" value={e.isAuto ? formatVND(e.amount) : editAmount} disabled={e.isAuto} title={e.isAuto ? "Dòng tự động luôn bằng tiền thực thu — cần điều chỉnh thì thêm 1 dòng thu/chi riêng" : ""} onChange={(ev) => setEditAmount(ev.target.value)} style={{ ...selectStyle, width: 130 }} />
                       <input value={editNote} onChange={(ev) => setEditNote(ev.target.value)} placeholder={e.isAuto ? "Ghi chú thêm (số tiền tự tính)" : "Ghi chú"} style={{ ...selectStyle, flex: 1, minWidth: 140 }} />
                       <Btn onClick={() => saveEdit(e)}><Check size={14} /> Lưu</Btn>
-                      <Btn variant="ghost" onClick={() => setEditingId(null)}>Hủy</Btn>
+                      <Btn variant="ghost" onClick={() => setEditingId(null)}>Huỷ</Btn>
                     </div>
                   )
                 ) : isMobile ? (
@@ -13364,8 +13364,8 @@ function ThuChiTab({ profile, isSuper }) {
                         <IconButton label="Sửa khoản này" onClick={() => startEdit(e)} style={{ flex: 1, minHeight: 40, fontSize: FONT.base }}>
                           <Pencil size={14} /> Sửa
                         </IconButton>
-                        <IconButton label="Xóa khoản này" tone="danger" onClick={() => deleteEntry(e)} style={{ flex: 1, minHeight: 40, fontSize: FONT.base }}>
-                          <Trash2 size={14} /> Xóa
+                        <IconButton label="Xoá khoản này" tone="danger" onClick={() => deleteEntry(e)} style={{ flex: 1, minHeight: 40, fontSize: FONT.base }}>
+                          <Trash2 size={14} /> Xoá
                         </IconButton>
                       </div>
                     )}
@@ -13392,7 +13392,7 @@ function ThuChiTab({ profile, isSuper }) {
                     {canEdit(e) && (
                       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                         <IconButton label="Sửa" onClick={() => startEdit(e)}><Pencil size={14} /></IconButton>
-                        <IconButton label="Xóa" tone="danger" onClick={() => deleteEntry(e)}><Trash2 size={14} /></IconButton>
+                        <IconButton label="Xoá" tone="danger" onClick={() => deleteEntry(e)}><Trash2 size={14} /></IconButton>
                       </div>
                     )}
                   </div>
@@ -14667,9 +14667,6 @@ function CustomersTab() {
           </div>
         </Section>
       </Card>
-      <div style={{ fontSize: FONT.xs, color: COLORS.muted, lineHeight: 1.6 }}>
-        Danh mục khách hàng dùng chung 1 key lưu trữ — an toàn tới vài trăm khách. Nếu vượt hàng nghìn khách, báo lại để chuyển sang lưu theo từng tuyến (customers:TX-01, customers:TX-02...) tránh vượt giới hạn ô Google Sheets.
-      </div>
     </div>
   );
 }
