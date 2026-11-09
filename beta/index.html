@@ -7,7 +7,7 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script src="libs.js?v=5fe2973e"></script>
+<script src="libs.js?v=369649d0"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
   /* Lần sửa 75 — điện thoại / máy tính bảng (màn cảm ứng):
@@ -924,13 +924,49 @@ function Chip(props) {
 }
 // Lần sửa 113 — NÚT BIỂU TƯỢNG: nút vuông nhỏ chỉ có icon (hoặc chữ rất ngắn), luôn có `label` cho người đọc màn hình.
 function IconButton(props) {
-  const { label, onClick, tone, testid, disabled, style, children } = props;
-  const c = tone === "danger" ? COLORS.danger : COLORS.text;
+  const { label, onClick, tone, bare, testid, disabled, style, children } = props;
+  const c = tone === "danger" ? COLORS.danger : tone === "success" ? COLORS.success : tone === "muted" ? COLORS.muted : COLORS.text;
   return (
     <button type="button" data-testid={testid} title={label} aria-label={label} onClick={(e) => { e.stopPropagation(); onClick && onClick(e); }} disabled={disabled}
       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 32, minHeight: 32, padding: "5px 8px",
-        borderRadius: 8, border: `1px solid ${tone === "danger" ? COLORS.danger + "88" : COLORS.border}`, background: COLORS.panel, color: c,
+        borderRadius: 8, border: bare ? "1px solid transparent" : `1px solid ${tone === "danger" ? COLORS.danger + "88" : COLORS.border}`, background: bare ? "transparent" : COLORS.panel, color: c,
         fontSize: FONT.sm, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1, flexShrink: 0, ...style }}>
+      {children}
+    </button>
+  );
+}
+
+// Lần sửa 114 — NÚT ĐÓNG (✕) ở góc hộp thoại: vùng bấm 36px, có tên "Đóng" cho người đọc màn hình (trước đây 9 bản tự vẽ, không tên).
+function CloseButton(props) {
+  const { onClick, disabled, testid, label = "Đóng" } = props;
+  return (
+    <button type="button" data-testid={testid} aria-label={label} title={label} onClick={onClick} disabled={disabled}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, margin: -6, flexShrink: 0, borderRadius: 8,
+        background: "transparent", border: "none", color: COLORS.muted, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.4 : 1 }}>
+      <X size={18} />
+    </button>
+  );
+}
+// Lần sửa 114 — NÚT DẠNG CHỮ (link): thao tác phụ, ít quan trọng ("Ẩn", "Bỏ sửa", "Quay lại danh sách"...).
+//   tone: muted (mặc định) / accent / danger / success / info · underline · small
+function LinkButton(props) {
+  const { onClick, tone = "muted", underline, small, bold, disabled, testid, title, style, children } = props;
+  return (
+    <button type="button" data-testid={testid} title={title} onClick={onClick} disabled={disabled}
+      style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1, color: COLORS[tone] || COLORS.muted, fontSize: small ? FONT.xs : FONT.sm, fontWeight: bold ? 600 : 400,
+        textDecoration: underline ? "underline" : "none", textAlign: "left", ...style }}>
+      {children}
+    </button>
+  );
+}
+// Lần sửa 114 — NÚT CHỌN DẠNG KHỐI (chia đều chiều ngang, chọn 1 trong 2–4): "Tổng hàng / Từng đơn", "Kệ / Khu", "Trừ / Cộng tồn"...
+function SegButton(props) {
+  const { active, color = COLORS.accent, onClick, testid, disabled, style, children } = props;
+  return (
+    <button type="button" data-testid={testid} aria-pressed={!!active} onClick={onClick} disabled={disabled}
+      style={{ flex: 1, minHeight: 40, boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: FONT.base, fontWeight: 700,
+        border: `1px solid ${active ? color : COLORS.border}`, background: active ? color + "1f" : COLORS.panel, color: active ? color : COLORS.text, ...style }}>
       {children}
     </button>
   );
@@ -1674,7 +1710,7 @@ function ScanModal({ onResult, onClose, title }) {
   }
   return ReactDOM.createPortal(
     <div data-testid="scan-modal" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}
-      style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(0,0,0,0.92)", display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 12px", overflowY: "auto" }}>
+      style={{ position: "fixed", inset: 0, zIndex: Z.scanner, background: "rgba(0,0,0,0.92)", display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 12px", overflowY: "auto" }}>
       <div style={{ width: "100%", maxWidth: 560, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, color: "#fff" }}>
         <div style={{ fontWeight: 700, fontSize: FONT.md }}>{title || "Quét mã sản phẩm"}</div>
         <Btn variant="ghost" onClick={onClose} style={{ color: "#fff", padding: "8px 14px" }}>Đóng</Btn>
@@ -1738,7 +1774,7 @@ function SkuLabelModal({ skus, onClose }) {
     : `@page { size: ${P.w}mm ${P.h}mm; margin: 0; } .qr-grid { display: block; } .qr-tem { page-break-after: always; break-after: page; } .qr-tem:last-child { page-break-after: auto; break-after: auto; }`;
   return ReactDOM.createPortal(
     <div className="qr-print-root" data-testid="label-modal" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}
-      style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.78)", overflowY: "auto", padding: "20px 12px" }}>
+      style={{ position: "fixed", inset: 0, zIndex: Z.modal2, background: "rgba(0,0,0,0.78)", overflowY: "auto", padding: "20px 12px" }}>
       <style>{`
         ${pageCss}
         .qr-sheet { background: #fff; color: #111; margin: 0 auto; width: ${P.a4 ? P.w * P.cols : P.w}mm; max-width: 100%; }
@@ -1820,7 +1856,7 @@ function ScanAssignModal({ sku, skus, onClose, onSaved }) {
   const full = codes.length >= SCAN_MAX;
   return ReactDOM.createPortal(
     <div data-testid="scan-assign" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}
-      style={{ position: "fixed", inset: 0, zIndex: 350, background: "rgba(0,0,0,0.78)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 12px", overflowY: "auto" }}>
+      style={{ position: "fixed", inset: 0, zIndex: Z.modal2 + 50, background: "rgba(0,0,0,0.78)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 12px", overflowY: "auto" }}>
       <div style={{ width: "100%", maxWidth: 560, background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", marginBottom: 8 }}>
           <div>
@@ -1997,12 +2033,9 @@ function SkuPicker({ skus, selectedCode, onSelect, autoFocus, scan, onScanPick, 
           <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.base, color: COLORS.accent }}>{selected.code}</div>
           <div style={{ fontSize: FONT.base, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected.name}</div>
         </div>
-        <button
-          onClick={() => { onSelect(""); setQuery(""); }}
-          style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", display: "flex", padding: 4 }}
-        >
+        <IconButton bare label="Bỏ" tone="muted" onClick={() => { onSelect(""); setQuery(""); }}>
           <X size={16} />
-        </button>
+        </IconButton>
       </div>
     );
   }
@@ -2671,22 +2704,8 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: FONT.sm, color: COLORS.muted, fontWeight: 600, letterSpacing: 0.2, marginBottom: 6 }}>LOẠI VỊ TRÍ</div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => setPosType("shelf")}
-                style={{
-                  flex: 1, padding: "9px", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: FONT.base,
-                  background: posType === "shelf" ? COLORS.accent + "22" : COLORS.panel2,
-                  border: `1.5px solid ${posType === "shelf" ? COLORS.accent : COLORS.border}`, color: COLORS.text,
-                }}
-              >Trên kệ</button>
-              <button
-                onClick={() => setPosType("zone")}
-                style={{
-                  flex: 1, padding: "9px", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: FONT.base,
-                  background: posType === "zone" ? COLORS.accent + "22" : COLORS.panel2,
-                  border: `1.5px solid ${posType === "zone" ? COLORS.accent : COLORS.border}`, color: COLORS.text,
-                }}
-              >Sàn rời</button>
+              <SegButton active={posType === "shelf"} onClick={() => setPosType("shelf")}>Trên kệ</SegButton>
+              <SegButton active={posType === "zone"} onClick={() => setPosType("zone")}>Sàn rời</SegButton>
             </div>
           </div>
         )}
@@ -2778,13 +2797,9 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                 <div style={{ fontSize: FONT.sm, color: COLORS.muted, fontWeight: 600 }}>MẶT HÀNG {index + 1}</div>
                 {productLines.length > 1 && (
-                  <button
-                    onClick={() => removeProductLine(line.id)}
-                    title="Bỏ mặt hàng này"
-                    style={{ background: "none", border: "none", padding: 4, color: COLORS.danger, cursor: "pointer", display: "flex" }}
-                  >
+                  <IconButton bare label="Bỏ mặt hàng này" tone="danger" onClick={() => removeProductLine(line.id)}>
                     <X size={16} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
               <Field label="Tìm sản phẩm (theo mã hoặc tên)">
@@ -2987,7 +3002,6 @@ function WarehouseOrdersTab() {
   const skuHits = tokensQ.length ? totals.filter((r) => matchSearch([r.code, r.name], tokensQ)) : [];
   const shownTotals = skuHits.length ? skuHits : totals;
 
-  const pill = (on) => ({ flex: 1, padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: FONT.base, fontWeight: 700, border: `1px solid ${on ? COLORS.accent : COLORS.border}`, background: on ? COLORS.accent + "22" : "transparent", color: on ? COLORS.accent : COLORS.text });
   const posText = (code) => {
     const p = pos[code];
     if (!p) return <span style={{ color: COLORS.muted }}>chưa thấy trong {WH_RECENT_DAYS} ngày đếm gần nhất</span>;
@@ -3017,8 +3031,8 @@ function WarehouseOrdersTab() {
         <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 10 }}>Chỉ xem — không sửa được đơn. Không hiện giá / tiền.</div>
       </Card>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <button style={pill(mode === "sum")} onClick={() => setMode("sum")} data-testid="wh-mode-sum">Tổng hàng cần soạn</button>
-        <button style={pill(mode === "list")} onClick={() => setMode("list")} data-testid="wh-mode-list">Từng đơn ({filtered.length})</button>
+        <SegButton active={mode === "sum"} onClick={() => setMode("sum")} testid="wh-mode-sum">Tổng hàng cần soạn</SegButton>
+        <SegButton active={mode === "list"} onClick={() => setMode("list")} testid="wh-mode-list">Từng đơn ({filtered.length})</SegButton>
       </div>
       {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginBottom: 10 }}>{err}</div>}
       {loading ? <Card><div style={{ fontSize: FONT.base, color: COLORS.muted }}>Đang tải đơn hàng...</div></Card>
@@ -3247,7 +3261,7 @@ function InstallAppModal({ onClose }) {
             <div style={{ fontSize: FONT.md, fontWeight: 700, color: COLORS.text }}>Cài app PLP về máy</div>
             <div style={{ fontSize: FONT.sm, color: COLORS.muted }}>Đang dùng: {INSTALL_OS_LABEL[det.os]} · {INSTALL_BROWSER_LABEL[det.browser] || ""}</div>
           </div>
-          <button onClick={onClose} aria-label="Đóng" style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}><X size={18} color={COLORS.muted} /></button>
+          <CloseButton onClick={onClose} />
         </div>
 
         {det.inApp && (
@@ -4280,7 +4294,6 @@ function StockAdjustTab({ profile }) {
   }
 
   const lbl = { fontSize: FONT.sm, color: COLORS.muted, fontWeight: 600 };
-  const segBtn = (on, color) => ({ flex: 1, minHeight: 42, boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: FONT.md, fontWeight: 700, border: `1px solid ${on ? color : COLORS.border}`, background: on ? color + "26" : "transparent", color: on ? color : COLORS.muted });
 
   return (
     <div data-testid="adj-root" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -4305,8 +4318,8 @@ function StockAdjustTab({ profile }) {
           <div data-testid="adj-sku"><SkuPicker skus={skus} selectedCode={skuCode} onSelect={setSkuCode} /></div>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button type="button" data-testid="adj-dir-out" onClick={() => setDir("out")} style={segBtn(dir === "out", COLORS.danger)}>− Trừ bớt tồn</button>
-          <button type="button" data-testid="adj-dir-in" onClick={() => setDir("in")} style={segBtn(dir === "in", COLORS.success)}>+ Cộng thêm tồn</button>
+          <SegButton testid="adj-dir-out" active={dir === "out"} color={COLORS.danger} onClick={() => setDir("out")} style={{ fontSize: FONT.md, minHeight: 42 }}>− Trừ bớt tồn</SegButton>
+          <SegButton testid="adj-dir-in" active={dir === "in"} color={COLORS.success} onClick={() => setDir("in")} style={{ fontSize: FONT.md, minHeight: 42 }}>+ Cộng thêm tồn</SegButton>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 12 }}>
           <Field label={`Số lượng (${sku ? bigUnitLabel(sku) : "Thùng"})`} style={{ flex: "1 1 120px" }}>
@@ -4364,7 +4377,7 @@ function StockAdjustTab({ profile }) {
                 <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 2 }}>{it.id} · {it.user || ""}{it.time ? " · " + new Date(it.time).toLocaleString("vi-VN") : ""}</div>
                 {rev && <div style={{ fontSize: FONT.sm, color: COLORS.warn || COLORS.muted, marginTop: 4 }}>Đã huỷ bằng phiếu {rev.id} ({rev.user || ""})</div>}
                 {!rev && !isRev && voidId !== it.id && (
-                  <div style={{ marginTop: 6 }}><button type="button" data-testid={`adj-void-${it.id}`} onClick={() => { setVoidId(it.id); setVoidNote(""); setVoidErr(""); }} style={{ background: "none", border: `1px solid ${COLORS.danger}66`, color: COLORS.danger, borderRadius: 8, padding: "8px 12px", minHeight: 38, boxSizing: "border-box", cursor: "pointer", fontSize: FONT.base, fontWeight: 600 }}>Huỷ phiếu</button></div>
+                  <div style={{ marginTop: 6 }}><IconButton label="Huỷ phiếu" tone="danger" testid={`adj-void-${it.id}`} onClick={() => { setVoidId(it.id); setVoidNote(""); setVoidErr(""); }} style={{ minHeight: 38, padding: "8px 12px", fontSize: FONT.base }}>Huỷ phiếu</IconButton></div>
                 )}
                 {voidId === it.id && (
                   <div data-testid="adj-void-box" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -4728,7 +4741,7 @@ function StockInPanel({ month, data, skus, skuMap, reload }) {
                 </div>
                 <input data-testid={`stkin-large-${r.code}`} inputMode="numeric" value={r.large} onChange={(e) => setRow(r.code, "large", e.target.value)} placeholder={s ? bigUnitLabel(s) : "Thùng"} disabled={!!s && caseSize(s) === 0} style={{ ...selectStyle, width: 92, flex: "0 0 auto" }} />
                 <input data-testid={`stkin-small-${r.code}`} inputMode="numeric" value={r.small} onChange={(e) => setRow(r.code, "small", e.target.value)} placeholder={(s && s.unitSmall) || "Lẻ"} style={{ ...selectStyle, width: 92, flex: "0 0 auto" }} />
-                <button type="button" data-testid={`stkin-del-${r.code}`} onClick={() => setRows((cur) => cur.filter((x) => x.code !== r.code))} style={{ background: "none", border: `1px solid ${COLORS.border}`, color: COLORS.muted, borderRadius: 8, minHeight: 40, minWidth: 40, cursor: "pointer", fontSize: FONT.md }}>✕</button>
+                <IconButton label="Bỏ dòng này" tone="muted" testid={`stkin-del-${r.code}`} onClick={() => setRows((cur) => cur.filter((x) => x.code !== r.code))} style={{ minWidth: 40, minHeight: 40, fontSize: FONT.md }}>✕</IconButton>
               </div>
             );
           })}
@@ -4761,7 +4774,7 @@ function StockInPanel({ month, data, skus, skuMap, reload }) {
                 </details>
                 <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 4 }}>{v.id} · {v.user || ""}{v.time ? " · " + new Date(v.time).toLocaleString("vi-VN") : ""}{isRev ? ` · đảo của ${v.reverseOf}` : ""}</div>
                 {rev && <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 3 }}>Đã huỷ bằng phiếu {rev.id}</div>}
-                {!rev && !isRev && voidId !== v.id && <div style={{ marginTop: 6 }}><button type="button" data-testid={`stkin-void-${v.id}`} onClick={() => { setVoidId(v.id); setVoidNote(""); setVoidErr(""); }} style={{ background: "none", border: `1px solid ${COLORS.danger}66`, color: COLORS.danger, borderRadius: 8, padding: "8px 12px", minHeight: 38, boxSizing: "border-box", cursor: "pointer", fontSize: FONT.base, fontWeight: 600 }}>Huỷ phiếu</button></div>}
+                {!rev && !isRev && voidId !== v.id && <div style={{ marginTop: 6 }}><IconButton label="Huỷ phiếu" tone="danger" testid={`stkin-void-${v.id}`} onClick={() => { setVoidId(v.id); setVoidNote(""); setVoidErr(""); }} style={{ minHeight: 38, padding: "8px 12px", fontSize: FONT.base }}>Huỷ phiếu</IconButton></div>}
                 {voidId === v.id && (
                   <div data-testid="stkin-void-box" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
                     <div data-testid="stkin-void-hint" style={{ fontSize: FONT.base, color: COLORS.muted, lineHeight: 1.55 }}>Phiếu đảo ghi vào ngày HÔM NAY ({shortDayText(todayStr())}); phiếu gốc vẫn giữ để đối chiếu.{stkMonthOf(v.date) !== todayStr().slice(0, 7) ? " Phiếu này thuộc tháng trước: tồn tháng trước giữ nguyên, phần huỷ tính vào tháng hiện tại (khớp với tồn đầu tháng đã lấy)." : ""}</div>
@@ -5719,7 +5732,7 @@ function EntryLogTab({ profile }) {
                 <div style={{ fontSize: FONT.md, fontWeight: 700, color: COLORS.text }}>CHỈNH SỬA DÒNG KIỂM KHO</div>
                 <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 3 }}>Chỉ dành cho Quản lý cấp cao</div>
               </div>
-              <button onClick={closeEdit} disabled={editBusy} title="Đóng" style={{ background: "none", border: "none", color: COLORS.muted, cursor: editBusy ? "not-allowed" : "pointer", display: "flex", padding: 4 }}><X size={18} /></button>
+              <CloseButton onClick={closeEdit} disabled={editBusy} />
             </div>
 
             <Field label={`Vị trí (${entryPositionLabel(editingEntry).split(" · ")[0]})`}>
@@ -6107,7 +6120,7 @@ function SkuTab() {
                   {s.priceHrc > 0 && <MobileRow label="Giá HRC" value={formatVND(s.priceHrc)} mono color={COLORS.accent} />}
                   {s.ctkm1 && <MobileRow label="CTKM 1" value={s.ctkm1} color={COLORS.info} />}
                   {s.ctkm2 && <MobileRow label="CTKM 2" value={s.ctkm2} color={COLORS.info} />}
-                  <button type="button" data-testid={`sku-scan-${s.code}`} onClick={() => setAssignSku(s.code)} style={{ marginTop: 6, minHeight: 36, padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.panel2, color: COLORS.text, cursor: "pointer", fontSize: FONT.base, fontWeight: 600 }}>🔳 Quét mã</button>
+                  <IconButton label="Quét mã" testid={`sku-scan-${s.code}`} onClick={() => setAssignSku(s.code)} style={{ marginTop: 6, minHeight: 36, padding: "6px 12px", fontSize: FONT.base }}>🔳 Quét mã</IconButton>
                 </div>
               </div>
             ) : (
@@ -6134,7 +6147,7 @@ function SkuTab() {
                 <div title="Giá HRC" style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.sm, color: s.priceHrc ? COLORS.accent : COLORS.muted, flexShrink: 0, width: 100, textAlign: "right" }}>
                   {s.priceHrc ? "HRC " + formatVND(s.priceHrc) : "—"}
                 </div>
-                <button type="button" data-testid={`sku-scan-${s.code}`} title="Quét mã thực tế để thêm / thay mã quét của SKU này" onClick={() => setAssignSku(s.code)} style={{ flexShrink: 0, minHeight: 34, padding: "4px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.panel2, color: COLORS.text, cursor: "pointer", fontSize: FONT.sm, fontWeight: 600 }}>🔳 Quét mã</button>
+                <IconButton label="Quét mã thực tế để thêm / thay mã quét của SKU này" testid={`sku-scan-${s.code}`} onClick={() => setAssignSku(s.code)} style={{ minHeight: 34, padding: "4px 10px" }}>🔳 Quét mã</IconButton>
               </div>
             ))}
           </div>
@@ -6876,7 +6889,7 @@ function MonthOrdersTab() {
       style={{ flex: 1, padding: "9px 14px", fontSize: FONT.base, fontWeight: 600, cursor: "pointer", border: `1px solid ${COLORS.border}`, background: view === id ? COLORS.accent : COLORS.panel, color: view === id ? COLORS.onAccent : COLORS.text }}>{label}</button>
   );
   const backBtn = (onClick) => (
-    <button type="button" data-testid="mq-back" onClick={onClick} style={{ border: "none", background: "none", color: COLORS.accent, cursor: "pointer", fontSize: FONT.base, padding: "0 0 8px 0" }}>← Quay lại danh sách</button>
+    <LinkButton tone="accent" onClick={onClick} testid="mq-back" style={{ fontSize: FONT.base, padding: "0 0 8px 0" }}>← Quay lại danh sách</LinkButton>
   );
   const linesOf = (o) => (
     <div data-testid="mq-lines" style={{ background: COLORS.bg, padding: "8px 14px", borderBottom: `1px solid ${COLORS.border}` }}>
@@ -7059,7 +7072,7 @@ function ProfileInfoModal({ profile, onClose, onProfileUpdate }) {
           <div style={{ fontSize: FONT.md, fontWeight: 700, color: COLORS.text, display: "flex", alignItems: "center", gap: 8 }}>
             <IdCard size={16} /> THÔNG TIN CÁ NHÂN
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", display: "flex" }}><X size={18} /></button>
+          <CloseButton onClick={onClose} />
         </div>
         {loading ? (
           <div style={{ padding: 16, fontSize: FONT.base, color: COLORS.muted }}>Đang tải...</div>
@@ -7174,7 +7187,7 @@ function ChangePasswordModal({ profile, onClose }) {
           <div style={{ fontSize: FONT.md, fontWeight: 700, color: COLORS.text, display: "flex", alignItems: "center", gap: 8 }}>
             <Lock size={16} /> ĐỔI MẬT KHẨU
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", display: "flex" }}><X size={18} /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <PasswordChangeForm profile={profile} />
       </div>
@@ -7195,7 +7208,7 @@ function ForcedPasswordChange({ profile, onDone, onLogout }) {
           <PasswordChangeForm profile={profile} forced onDone={onDone} />
         </Card>
         <div style={{ textAlign: "center", marginTop: 14 }}>
-          <button onClick={onLogout} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", fontSize: FONT.base, textDecoration: "underline" }}>Thoát, đăng nhập tài khoản khác</button>
+          <LinkButton underline onClick={onLogout} style={{ fontSize: FONT.base }}>Thoát, đăng nhập tài khoản khác</LinkButton>
         </div>
       </div>
     </div>
@@ -7822,18 +7835,14 @@ function ShelfRow({ shelf, side, onAddBin, onRemoveBin, onRemoveShelf, onRename,
               onKeyDown={(e) => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setRenaming(false); }}
               style={{ ...selectStyle, width: 140, padding: "6px 8px", fontSize: FONT.base }}
             />
-            <button onClick={commitRename} title="Lưu tên" style={{ background: "none", border: "none", padding: 4, color: COLORS.success, cursor: "pointer", display: "flex" }}><Check size={15} /></button>
-            <button onClick={() => setRenaming(false)} title="Huỷ" style={{ background: "none", border: "none", padding: 4, color: COLORS.muted, cursor: "pointer", display: "flex" }}><X size={15} /></button>
+            <IconButton bare label="Lưu tên" tone="success" onClick={commitRename}><Check size={15} /></IconButton>
+            <IconButton bare label="Huỷ" tone="muted" onClick={() => setRenaming(false)}><X size={15} /></IconButton>
           </div>
         ) : (
-          <button
-            onClick={startRename}
-            title="Đổi tên hiển thị cho kệ này (không đổi số vị trí lưu trong dữ liệu kiểm kho)"
-            style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", padding: 0, cursor: "pointer", flexShrink: 0 }}
-          >
+          <LinkButton onClick={startRename} title="Đổi tên hiển thị cho kệ này (không đổi số vị trí lưu trong dữ liệu kiểm kho)" style={{ gap: 5, flexShrink: 0 }}>
             <span style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.base, color: COLORS.accent }}>{shelfDisplayName(shelf)}</span>
             <Pencil size={11} color={COLORS.muted} />
-          </button>
+          </LinkButton>
         )}
         <div style={{ fontSize: FONT.sm, color: COLORS.muted, flex: 1, minWidth: 160 }}>
           {bins.length === 0 ? "Chưa chia ngăn — cả kệ là 1 vị trí." : `${bins.length} ngăn: ${bins.map((b) => b.label).join(", ")}`}
@@ -7853,14 +7862,9 @@ function ShelfRow({ shelf, side, onAddBin, onRemoveBin, onRemoveShelf, onRename,
           {bins.map((b) => (
             <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: FONT.sm, color: COLORS.text, background: COLORS.panel2, border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "4px 4px 4px 10px" }}>
               {b.label}
-              <button
-                onClick={() => onRemoveBin(b.id, b.label)}
-                disabled={busy}
-                title={`Xoá ngăn "${b.label}"`}
-                style={{ background: "none", border: "none", padding: 3, color: COLORS.danger, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.5 : 1, display: "flex" }}
-              >
+              <IconButton bare label={`Xoá ngăn "${b.label}"`} tone="danger" onClick={() => onRemoveBin(b.id, b.label)} disabled={busy} style={{ minWidth: 24, minHeight: 24, padding: 2 }}>
                 <X size={12} />
-              </button>
+              </IconButton>
             </div>
           ))}
         </div>
@@ -7878,13 +7882,9 @@ function ShelfRow({ shelf, side, onAddBin, onRemoveBin, onRemoveShelf, onRename,
           <Btn variant="ghost" onClick={() => { setAdding(false); setName(""); }} style={{ padding: "6px 10px", fontSize: FONT.sm }}>Huỷ</Btn>
         </div>
       ) : (
-        <button
-          onClick={() => setAdding(true)}
-          disabled={busy}
-          style={{ marginTop: 8, background: "none", border: "none", padding: 0, color: COLORS.accent, fontSize: FONT.sm, cursor: busy ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 4 }}
-        >
+        <LinkButton tone="accent" onClick={() => setAdding(true)} disabled={busy} style={{ marginTop: 8, gap: 4 }}>
           <Plus size={12} /> Thêm ngăn (tầng, trệt, hoặc tên tuỳ ý)
-        </button>
+        </LinkButton>
       )}
     </div>
   );
@@ -8979,7 +8979,7 @@ function CartAddPanel({ b, skus, testid }) {
                         <option value="large">{giftSku ? bigUnitLabel(giftSku) : "Thùng"}</option>
                       </select>
                     </Field>
-                    {b.pickGifts.length > 1 && <button onClick={() => b.removeGift(idx)} style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", paddingBottom: 9 }}><X size={15} /></button>}
+                    {b.pickGifts.length > 1 && <IconButton bare label="Bỏ" tone="danger" onClick={() => b.removeGift(idx)} style={{ paddingBottom: 9 }}><X size={15} /></IconButton>}
                   </div>
                 );
               })}
@@ -9200,14 +9200,14 @@ function CustomerPicker({ customers, vehicles, value, onChange, directUpdate }) 
             )}
             <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 2 }}>{value.address}</div>
           </div>
-          <button onClick={() => { setEditingInfo(false); onChange(null); }} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", flexShrink: 0, alignSelf: "flex-start" }}><X size={16} /></button>
+          <IconButton bare label="Bỏ" tone="muted" onClick={() => { setEditingInfo(false); onChange(null); }} style={{ flexShrink: 0, alignSelf: "flex-start" }}><X size={16} /></IconButton>
         </div>
         <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: FONT.xs, color: COLORS.muted, flexWrap: "wrap", alignItems: "center" }}>
           <span><span style={{ color: COLORS.muted }}>Mã KH </span><span style={{ fontFamily: "'Roboto Mono', monospace", color: value.code ? COLORS.text : COLORS.danger }}>{value.code || "chưa có mã"}</span></span>
           {!editingInfo && <span>{value.phone}</span>}
           {!editingInfo
-            ? <button onClick={startEdit} title="Sửa tên / SĐT cho đơn này" style={{ background: "none", border: "none", color: COLORS.accent, cursor: "pointer", fontSize: FONT.sm, fontWeight: 600, padding: 0, display: "flex", alignItems: "center", gap: 4 }}><Pencil size={12} /> Sửa tên/SĐT</button>
-            : <button onClick={() => setEditingInfo(false)} style={{ background: "none", border: "none", color: COLORS.success, cursor: "pointer", fontSize: FONT.sm, fontWeight: 600, padding: 0, display: "flex", alignItems: "center", gap: 4 }}><Check size={12} /> Xong</button>}
+            ? <LinkButton tone="accent" bold onClick={startEdit} title="Sửa tên / SĐT cho đơn này" style={{ gap: 4 }}><Pencil size={12} /> Sửa tên/SĐT</LinkButton>
+            : <LinkButton tone="success" bold onClick={() => setEditingInfo(false)} style={{ gap: 4 }}><Check size={12} /> Xong</LinkButton>}
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ color: COLORS.info }}>Tuyến:</span>
             <select
@@ -9238,7 +9238,7 @@ function CustomerPicker({ customers, vehicles, value, onChange, directUpdate }) 
                 {directUpdate ? "Cập nhật luôn vào danh mục khách hàng" : "Gửi đề xuất cập nhật danh mục (Quản lý cấp cao duyệt mới đổi)"}
               </label>
             ) : <div style={{ color: COLORS.muted }}>Khách này chưa có mã/ID nên chỉ sửa được cho đơn này.</div>}
-            <button onClick={undoEdit} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", fontSize: FONT.xs, padding: 0, textDecoration: "underline" }}>Bỏ sửa, dùng lại thông tin trong danh mục</button>
+            <LinkButton underline small onClick={undoEdit}>Bỏ sửa, dùng lại thông tin trong danh mục</LinkButton>
           </div>
         )}
         {!showAllRoutes && vehicles.some((v) => !vehicleMatchesDow(v, dow)) && (
@@ -9255,9 +9255,9 @@ function CustomerPicker({ customers, vehicles, value, onChange, directUpdate }) 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={() => onChange(null)} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", fontSize: FONT.sm, display: "flex", alignItems: "center", gap: 4 }}>
+          <LinkButton onClick={() => onChange(null)} style={{ gap: 4 }}>
             <X size={13} /> Bỏ nhập tay, tìm lại
-          </button>
+          </LinkButton>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Field label="Tên khách hàng"><input value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })} placeholder="Nhập tên khách" style={selectStyle} /></Field>
@@ -10212,7 +10212,7 @@ function OrderDetailModal({ order, editable, locked, skus, vehicles, onClose, on
           </div>
           {/* Lần sửa 46 — khoá đóng modal trong lúc đang lưu, cùng lý do đã
               nêu ở AdminCreateOrderModal (OrdersAdminTab.html). */}
-          <button data-testid="order-detail-close" onClick={tryClose} disabled={saving} style={{ background: "none", border: "none", color: COLORS.muted, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.4 : 1, display: "flex" }}><X size={18} /></button>
+          <CloseButton onClick={tryClose} disabled={saving} testid="order-detail-close" />
         </div>
 
         {/* Lần sửa 34 — đơn do Admin tự ra đơn hộ (chọn NVBH), không phải
@@ -10263,7 +10263,7 @@ function OrderDetailModal({ order, editable, locked, skus, vehicles, onClose, on
                 {order.editRequestStatus === "pending" ? (
                   <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                     <span style={{ color: COLORS.muted }}>⏳ Đã gửi yêu cầu lúc {order.editRequestAt ? new Date(order.editRequestAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}, đang chờ Quản lý duyệt.</span>
-                    <button onClick={() => onCancelEditRequest(order)} style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", fontSize: FONT.sm, flexShrink: 0 }}>Huỷ yêu cầu</button>
+                    <LinkButton tone="danger" onClick={() => onCancelEditRequest(order)} style={{ flexShrink: 0 }}>Huỷ yêu cầu</LinkButton>
                   </div>
                 ) : (
                   <>
@@ -10366,7 +10366,7 @@ function OrderDetailModal({ order, editable, locked, skus, vehicles, onClose, on
                   <div key={i} data-testid={`edit-line-${i}`} style={{ padding: "8px 10px", borderBottom: i < lines.length - 1 ? `1px solid ${COLORS.border}` : "none", background: l.isGift ? COLORS.accent + "10" : "transparent" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ flex: 1, minWidth: 0, fontSize: FONT.base, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.isGift && "🎁 "}{l.skuName}</div>
-                      <button data-testid={`edit-line-del-${i}`} onClick={() => removeLineAt(i)} title="Xoá mặt hàng" style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", display: "flex" }}><X size={15} /></button>
+                      <IconButton bare label="Xoá mặt hàng" tone="danger" onClick={() => removeLineAt(i)} testid={`edit-line-del-${i}`}><X size={15} /></IconButton>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
                       <input data-testid={`edit-line-qty-${i}`} type="number" inputMode="decimal" min="0" value={l.qty} onChange={(e) => updateLineQty(i, e.target.value)} style={{ ...selectStyle, width: 70, padding: "5px 8px" }} />
@@ -10989,9 +10989,9 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
                     <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {d.customer?.name || "(chưa chọn khách)"}
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); deleteDraftById(d.draftId); }} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", flexShrink: 0, padding: 0, display: "flex" }}>
+                    <IconButton bare label="Bỏ" tone="muted" onClick={(e) => { e.stopPropagation(); deleteDraftById(d.draftId); }} style={{ flexShrink: 0 }}>
                       <X size={13} />
-                    </button>
+                    </IconButton>
                   </div>
                   <div style={{ fontSize: FONT.xs, color: COLORS.muted, marginTop: 2 }}>{dCart.length} SP · {formatVND(Math.max(0, dTotal))}</div>
                   {isActive && <div style={{ fontSize: FONT.xs, color: COLORS.accent, marginTop: 3, fontWeight: 600 }}>Đang chỉnh</div>}
@@ -11078,7 +11078,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
                           </select>
                         </Field>
                         {pickGifts.length > 1 && (
-                          <button onClick={() => removeGift(idx)} style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", paddingBottom: 9 }}><X size={15} /></button>
+                          <IconButton bare label="Bỏ" tone="danger" onClick={() => removeGift(idx)} style={{ paddingBottom: 9 }}><X size={15} /></IconButton>
                         )}
                       </div>
                     );
@@ -11136,7 +11136,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
                   {lineFlag(l) && <div style={{ fontSize: FONT.xs, fontWeight: 700, color: lineFlag(l) === "high" ? COLORS.info : COLORS.danger, marginTop: 2 }}>{lineFlagLabel(l)}</div>}
                 </div>
                 <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.base, color: l.isGift ? COLORS.accent : COLORS.text, flexShrink: 0 }}>{formatVND(l.unitPrice * l.qty)}</div>
-                <button onClick={() => removeLine(i, l)} title="Xoá mặt hàng" style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", flexShrink: 0 }}><X size={15} /></button>
+                <IconButton bare label="Xoá mặt hàng" tone="danger" onClick={() => removeLine(i, l)} style={{ flexShrink: 0 }}><X size={15} /></IconButton>
               </div>
             ))}
           </div>
@@ -11181,7 +11181,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
           <span>Thuế TT40 (1% VAT, 0.5% TNCN) — để trống nếu không áp dụng</span>
           <input type="number" inputMode="decimal" min="0" value={taxTT40} onChange={(e) => setTaxTT40(e.target.value)} placeholder="0" style={{ ...selectStyle, width: 110, textAlign: "right" }} />
         </div>
-        {!hasAdj && <button type="button" onClick={() => setAdjOpen(false)} style={{ background: "none", border: "none", padding: "0 0 8px", color: COLORS.muted, fontSize: FONT.sm, cursor: "pointer" }}>Ẩn bớt</button>}
+        {!hasAdj && <LinkButton onClick={() => setAdjOpen(false)} style={{ padding: "0 0 8px" }}>Ẩn bớt</LinkButton>}
         </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: FONT.lg, fontWeight: 700, color: COLORS.text, borderTop: `1px solid ${COLORS.border}`, paddingTop: 10 }}>
@@ -11216,9 +11216,9 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <RefreshButton auto={autoView} />
               {viewOrders.length > 0 && (
-                <button onClick={() => setPrintOrders(viewOrders)} style={{ background: "none", border: "none", color: COLORS.accent, cursor: "pointer", fontSize: FONT.sm, display: "flex", alignItems: "center", gap: 4 }}>
+                <LinkButton tone="accent" onClick={() => setPrintOrders(viewOrders)} style={{ gap: 4 }}>
                   <Download size={13} /> In gộp cả ngày
-                </button>
+                </LinkButton>
               )}
             </div>
           </div>
@@ -11530,7 +11530,7 @@ function AdminCreateOrderModal({ profile, onClose, onCreated }) {
               không thoát giữa chừng rồi tưởng nhầm là chưa lưu xong (đơn vẫn
               lưu tiếp ở phía sau dù đã thoát ra, dễ gây hiểu lầm/đơn trùng
               nếu mở lại bấm Lưu lần nữa trước khi lượt trước xong). */}
-          <button data-testid="admin-create-close" onClick={tryClose} disabled={saving} style={{ background: "none", border: "none", color: COLORS.muted, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.4 : 1, display: "flex" }}><X size={18} /></button>
+          <CloseButton onClick={tryClose} disabled={saving} testid="admin-create-close" />
         </div>
 
         {loading ? (
@@ -11619,7 +11619,7 @@ function AdminCreateOrderModal({ profile, onClose, onCreated }) {
                                 </select>
                               </Field>
                               {pickGifts.length > 1 && (
-                                <button onClick={() => removeGift(idx)} style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", paddingBottom: 9 }}><X size={15} /></button>
+                                <IconButton bare label="Bỏ" tone="danger" onClick={() => removeGift(idx)} style={{ paddingBottom: 9 }}><X size={15} /></IconButton>
                               )}
                             </div>
                           );
@@ -11676,7 +11676,7 @@ function AdminCreateOrderModal({ profile, onClose, onCreated }) {
                   {lineFlag(l) && <div style={{ fontSize: FONT.xs, fontWeight: 700, color: lineFlag(l) === "high" ? COLORS.info : COLORS.danger, marginTop: 2 }}>{lineFlagLabel(l)}</div>}
                       </div>
                       <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.base, color: l.isGift ? COLORS.accent : COLORS.text, flexShrink: 0 }}>{formatVND(l.unitPrice * l.qty)}</div>
-                      <button onClick={() => removeLine(i, l)} title="Xoá mặt hàng" style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", flexShrink: 0 }}><X size={15} /></button>
+                      <IconButton bare label="Xoá mặt hàng" tone="danger" onClick={() => removeLine(i, l)} style={{ flexShrink: 0 }}><X size={15} /></IconButton>
                     </div>
                   ))}
                 </div>
@@ -12419,11 +12419,11 @@ function OrdersAdminTab({ profile, isSuper }) {
                 <MobileRow label="NVBH" value={o.salesName} />
                 <MobileRow label="Tuyến" value={routeDriverOnly(o)} />
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                  <button onClick={() => setPrintOrders([o])} style={{ flex: 1, background: "none", border: `1px solid ${COLORS.border}`, borderRadius: 7, padding: "9px 8px", color: COLORS.text, cursor: "pointer", fontSize: FONT.base, fontWeight: 600 }}>🖨 In</button>
+                  <IconButton label="In phiếu đơn này" onClick={() => setPrintOrders([o])} style={{ flex: 1, minHeight: 40, fontSize: FONT.base }}>🖨 In</IconButton>
                   {isSuper && (
-                    <button onClick={() => deleteOrder(o)} title="Xóa đơn" style={{ background: "none", border: `1px solid ${COLORS.danger}`, borderRadius: 7, padding: "9px 12px", color: COLORS.danger, cursor: "pointer", fontSize: FONT.base, display: "flex", alignItems: "center", gap: 6 }}>
+                    <IconButton label="Xóa đơn" tone="danger" onClick={() => deleteOrder(o)} style={{ minHeight: 40, padding: "5px 12px", fontSize: FONT.base }}>
                     <Trash2 size={14} /> Xóa
-                    </button>
+                    </IconButton>
                   )}
                 </div>
                 </div>
@@ -12956,7 +12956,7 @@ function OrderImportModal({ profile, defaultDate, onClose, onApply }) {
           <div style={{ fontSize: FONT.md, fontWeight: 700, color: COLORS.text, display: "flex", alignItems: "center", gap: 8 }}>
             <Upload size={16} /> NHẬP ĐƠN HÀNG TỪ EXCEL
           </div>
-          <button data-testid="import-close" disabled={stage === "applying" || stage === "loading"} onClick={() => { /* Lần sửa 73 — X cũng như chạm nền: không đóng giữa lúc đang tạo đơn, hỏi lại khi có bản xem trước */ if (stage === "applying" || stage === "loading") return; if (stage === "preview" && !window.confirm("Đóng bản xem trước? Các đơn CHƯA được tạo.")) return; onClose(); }} style={{ background: "none", border: "none", color: COLORS.muted, cursor: stage === "applying" || stage === "loading" ? "not-allowed" : "pointer", opacity: stage === "applying" || stage === "loading" ? 0.4 : 1, display: "flex" }}><X size={18} /></button>
+          <CloseButton onClick={() => { /* Lần sửa 73 — X cũng như chạm nền: không đóng giữa lúc đang tạo đơn, hỏi lại khi có bản xem trước */ if (stage === "applying" || stage === "loading") return; if (stage === "preview" && !window.confirm("Đóng bản xem trước? Các đơn CHƯA được tạo.")) return; onClose(); }} disabled={stage === "applying" || stage === "loading"} testid="import-close" />
         </div>
 
         {stage === "pick" && (
@@ -13301,7 +13301,7 @@ function ThuChiTab({ profile, isSuper }) {
         <div data-testid="thuchi-decoupled-note" style={{ padding: "6px 16px", fontSize: FONT.sm, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>
           Tiền bán hàng không còn tự đưa vào Thu chi (từ lần sửa 81) — xem doanh số và công nợ ở mục "Doanh số (theo file Excel)" / "Công nợ" (lấy từ file Excel). Sổ này chỉ gồm các khoản nhập tay.
         </div>
-        {syncNote && <div style={{ padding: "8px 16px", fontSize: FONT.sm, color: COLORS.accent, borderBottom: `1px solid ${COLORS.border}` }}>{syncNote}{isSuper && /trước khi có cách tính mới/.test(syncNote) && <> <button onClick={() => setRecalc({})} style={{ background: "none", border: "none", color: COLORS.info, cursor: "pointer", fontSize: FONT.sm, padding: 0, textDecoration: "underline" }}>Tính lại các ngày cũ theo tiền thực thu</button></>}</div>}
+        {syncNote && <div style={{ padding: "8px 16px", fontSize: FONT.sm, color: COLORS.accent, borderBottom: `1px solid ${COLORS.border}` }}>{syncNote}{isSuper && /trước khi có cách tính mới/.test(syncNote) && <> <LinkButton tone="info" underline onClick={() => setRecalc({})}>Tính lại các ngày cũ theo tiền thực thu</LinkButton></>}</div>}
         {entries.some((e) => e.isAuto && /nhập tay/.test(e.note || "")) && (
           <div data-testid="thuchi-dup-warn" style={{ padding: "8px 16px", fontSize: FONT.sm, color: COLORS.danger, borderBottom: `1px solid ${COLORS.border}` }}>
             ⚠ Có NVBH vừa có dòng "Thu bán hàng" TỰ ĐỘNG (tiền thực thu từ Công nợ) vừa có dòng nhập tay — nếu là cùng 1 khoản tiền thì xoá dòng nhập tay để không cộng trùng.
@@ -13365,12 +13365,12 @@ function ThuChiTab({ profile, isSuper }) {
                     <MobileRow label="Người nhập" value={e.isAuto && !e.createdByName ? "Hệ thống" : (e.createdByName || "")} />
                     {canEdit(e) && (
                       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                        <button onClick={() => startEdit(e)} style={{ flex: 1, background: "none", border: `1px solid ${COLORS.border}`, borderRadius: 7, padding: "8px", color: COLORS.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: FONT.base }}>
-                          <Pencil size={13} /> Sửa
-                        </button>
-                        <button onClick={() => deleteEntry(e)} style={{ flex: 1, background: "none", border: `1px solid ${COLORS.danger}`, borderRadius: 7, padding: "8px", color: COLORS.danger, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: FONT.base }}>
-                          <Trash2 size={13} /> Xóa
-                        </button>
+                        <IconButton label="Sửa khoản này" onClick={() => startEdit(e)} style={{ flex: 1, minHeight: 40, fontSize: FONT.base }}>
+                          <Pencil size={14} /> Sửa
+                        </IconButton>
+                        <IconButton label="Xóa khoản này" tone="danger" onClick={() => deleteEntry(e)} style={{ flex: 1, minHeight: 40, fontSize: FONT.base }}>
+                          <Trash2 size={14} /> Xóa
+                        </IconButton>
                       </div>
                     )}
                   </div>
@@ -13395,12 +13395,8 @@ function ThuChiTab({ profile, isSuper }) {
                     </div>
                     {canEdit(e) && (
                       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                        <button onClick={() => startEdit(e)} title="Sửa" style={{ background: "none", border: `1px solid ${COLORS.border}`, borderRadius: 6, padding: "4px 7px", color: COLORS.text, cursor: "pointer", display: "flex" }}>
-                          <Pencil size={13} />
-                        </button>
-                        <button onClick={() => deleteEntry(e)} title="Xóa" style={{ background: "none", border: `1px solid ${COLORS.danger}`, borderRadius: 6, padding: "4px 7px", color: COLORS.danger, cursor: "pointer", display: "flex" }}>
-                          <Trash2 size={13} />
-                        </button>
+                        <IconButton label="Sửa" onClick={() => startEdit(e)}><Pencil size={14} /></IconButton>
+                        <IconButton label="Xóa" tone="danger" onClick={() => deleteEntry(e)}><Trash2 size={14} /></IconButton>
                       </div>
                     )}
                   </div>
@@ -13458,8 +13454,8 @@ function RecalcOldAutoThu({ state, setState, onDone }) {
   }
   const box = { padding: "10px 16px", fontSize: FONT.base, color: COLORS.text, borderBottom: `1px solid ${COLORS.border}`, background: COLORS.panel2, lineHeight: 1.6 };
   if (state.loading) return <div style={box}>Đang tính thử...</div>;
-  if (state.error) return <div style={{ ...box, color: COLORS.danger }}>{state.error} <button onClick={() => setState(null)} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", textDecoration: "underline" }}>Đóng</button></div>;
-  if (state.done) return <div data-testid="recalc-done" style={{ ...box, color: COLORS.success }}>Đã tính lại {state.done.days.length} ngày theo tiền thực thu. Từ nay các ngày đó cũng tự cập nhật. <button onClick={() => setState(null)} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer", textDecoration: "underline" }}>Đóng</button></div>;
+  if (state.error) return <div style={{ ...box, color: COLORS.danger }}>{state.error} <LinkButton underline onClick={() => setState(null)}>Đóng</LinkButton></div>;
+  if (state.done) return <div data-testid="recalc-done" style={{ ...box, color: COLORS.success }}>Đã tính lại {state.done.days.length} ngày theo tiền thực thu. Từ nay các ngày đó cũng tự cập nhật. <LinkButton underline onClick={() => setState(null)}>Đóng</LinkButton></div>;
   const days = (state.preview && state.preview.days) || [];
   return (
     <div data-testid="recalc-preview" style={box}>
@@ -13916,7 +13912,7 @@ function SalesRevenueTab() {
         <Card style={{ marginTop: 14, padding: 0 }}>
           <div style={{ padding: "12px 14px", fontSize: FONT.base, fontWeight: 700, display: "flex", justifyContent: "space-between", gap: 8 }}>
             <span>Đơn của {by === "d" ? fmtDate(drill) : drill} ({drillRows.length})</span>
-            <button onClick={() => setDrill(null)} style={{ background: "none", border: "none", color: COLORS.muted, cursor: "pointer" }}><X size={16} /></button>
+            <IconButton bare label="Bỏ" tone="muted" onClick={() => setDrill(null)}><X size={16} /></IconButton>
           </div>
           <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
             <table style={{ ...sfTable, minWidth: 640 }}>
@@ -14002,7 +13998,7 @@ function SalesDebtTab() {
               <option value="">Mọi tuổi nợ</option><option value="0-7">0–7 ngày</option><option value="8-15">8–15 ngày</option><option value="16-30">16–30 ngày</option><option value="30+">Trên 30 ngày</option>
             </select>
           </Field>
-          <Field label="Tìm mã KH / địa chỉ / mã đơn" style={{ flex: "2 1 220px" }}><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="VD: DV134C00404, Khánh Hội, 0001YC" style={selectStyle} /></Field>
+          <Field label="Tìm mã KH / địa chỉ / mã đơn" style={{ flex: "2 1 170px" }}><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="VD: DV134C00404, Khánh Hội, 0001YC" style={selectStyle} /></Field>
           <RefreshButton auto={auto} />
           <Btn variant="ghost" onClick={exportXlsx} disabled={!shown.length}><Download size={15} /> Xuất Excel</Btn>
         </div>
@@ -14249,7 +14245,7 @@ function SalesImportTab({ onGoRevenue }) {
             )}
             {warnings.length > 0 && (
               <div style={{ fontSize: FONT.base, color: COLORS.accent, marginBottom: 10 }}>
-                <button onClick={() => setShowWarn(!showWarn)} style={{ background: "none", border: "none", color: COLORS.accent, cursor: "pointer", padding: 0, textDecoration: "underline", fontSize: FONT.base }}>{warnings.length} đơn có tổng trong file khác tiền tính được {showWarn ? "(ẩn)" : "(xem)"}</button>
+                <LinkButton tone="accent" underline onClick={() => setShowWarn(!showWarn)} style={{ fontSize: FONT.base }}>{warnings.length} đơn có tổng trong file khác tiền tính được {showWarn ? "(ẩn)" : "(xem)"}</LinkButton>
                 {showWarn && <ul style={{ margin: "4px 0 0 18px", padding: 0 }}>{warnings.slice(0, 15).map((o) => <li key={o.key}>{o.nv} · {o.sdh || sfShortCode(o.key)}: {o.warn.filter((w) => !/Số đơn/.test(w)).join("; ")}</li>)}</ul>}
               </div>
             )}
@@ -14578,7 +14574,7 @@ function CustomersTab() {
                       {v.days
                         ? <span><span style={{ color: COLORS.accent, fontWeight: 600 }}>{v.days}</span>{v.area ? ` — ${v.area}` : ""}</span>
                         : <span style={{ color: COLORS.muted }}>Không lịch cụ thể</span>}
-                      <button onClick={() => removeVehicle(v.id)} style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", display: "flex" }}><X size={12} /></button>
+                      <IconButton bare label={`Xoá xe ${v.label || v.driver || ""}`} tone="danger" onClick={() => removeVehicle(v.id)} style={{ minWidth: 24, minHeight: 24, padding: 2 }}><X size={12} /></IconButton>
                     </span>
                   ))}
                 </div>
@@ -14647,7 +14643,7 @@ function CustomersTab() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                         <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.text }}>{c.name}</div>
-                        <button onClick={() => removeCustomer(ck)} style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", display: "flex", flexShrink: 0 }}><Trash2 size={14} /></button>
+                        <IconButton bare label="Xoá" tone="danger" onClick={() => removeCustomer(ck)} style={{ flexShrink: 0 }}><Trash2 size={14} /></IconButton>
                       </div>
                       <div style={{ fontSize: FONT.xs, color: COLORS.muted, margin: "2px 0 6px" }}>{c.address}</div>
                       <MobileRow label="Mã KH" value={c.code || "CHƯA CÓ MÃ"} mono color={noCode ? COLORS.danger : COLORS.accent} />
@@ -14666,7 +14662,7 @@ function CustomersTab() {
                     <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.xs, color: noCode ? COLORS.danger : COLORS.accent, width: 92, flexShrink: 0 }}>{c.code || "CHƯA CÓ MÃ"}</div>
                     <div style={{ fontSize: FONT.sm, color: COLORS.text, flex: 1, minWidth: 0 }}>{c.name}<div style={{ fontSize: FONT.xs, color: COLORS.muted }}>{c.address}{c.createdBy ? ` · NV ${c.createdBy} thêm lúc ra đơn${c.createdAt ? " " + fmtDate(vnDateOf(c.createdAt)) : ""}` : ""}</div></div>
                     <div style={{ fontSize: FONT.xs, color: COLORS.muted, flexShrink: 0, maxWidth: 200, textAlign: "right" }}>{routeLabelOf(vehicles, c.routeId) || c.routeId}</div>
-                    <button onClick={() => removeCustomer(ck)} style={{ background: "none", border: "none", color: COLORS.danger, cursor: "pointer", display: "flex" }}><Trash2 size={13} /></button>
+                    <IconButton bare label="Xoá" tone="danger" onClick={() => removeCustomer(ck)}><Trash2 size={13} /></IconButton>
                   </div>
                 ); })}
               </div>
