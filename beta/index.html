@@ -7,7 +7,7 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script src="libs.js?v=c5636511"></script>
+<script src="libs.js?v=be544bef"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
   /* Lần sửa 117 — NÂNG CẤP CẢM GIÁC: chữ mịn, số thẳng cột (mọi bảng tiền / số lượng), ô tích cùng màu chủ đạo */
@@ -53,6 +53,7 @@
   /* Lần sửa 112 — ô nhập / ô chọn đang được chọn: viền xanh rõ (trước đây outline: none -> không biết con trỏ đang ở ô nào).
      !important vì kiểu viết thẳng trong thẻ (selectStyle) đặt outline: none. */
   input:focus, select:focus, textarea:focus { outline: 2px solid #2557D6 !important; outline-offset: 0; border-color: #2557D6 !important; }
+  [role="dialog"] > [tabindex="-1"]:focus { outline: none; } /* Lần sửa 118 — khung hộp thoại nhận tiêu điểm lúc mở: không vẽ viền */
   input[type="checkbox"]:focus:not(:focus-visible), input[type="radio"]:focus:not(:focus-visible) { outline: none !important; }
 </style>
 
@@ -893,26 +894,47 @@ function Modal(props) {
   const idRef = useRef(null);
   if (idRef.current === null) idRef.current = Math.random();
   const dismissRef = useRef(null);
+  const boxRef = useRef(null);
   dismissRef.current = () => { if (onBackdrop) onBackdrop(); else if (canClose && onClose) onClose(); };
   useEffect(() => {
     const id = idRef.current;
     __modalStack.push(id);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // Lần sửa 118 — QUẢN LÝ TIÊU ĐIỂM (bàn phím / đọc màn hình): mở hộp -> đưa tiêu điểm vào trong hộp; Tab chỉ đi vòng
+    // trong hộp (không lọt ra trang phía sau); đóng hộp -> trả tiêu điểm về đúng nút đã mở hộp.
+    const prevFocus = document.activeElement;
+    const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const t0 = setTimeout(() => {
+      const box = boxRef.current; if (!box || box.contains(document.activeElement)) return; // ô có autoFocus đã tự nhận tiêu điểm
+      const panel = box.firstElementChild || box;
+      if (!panel.hasAttribute("tabindex")) panel.setAttribute("tabindex", "-1");
+      try { panel.focus({ preventScroll: true }); } catch (e) {}
+    }, 0);
     const onKey = (e) => {
-      if (e.key !== "Escape" || __modalStack[__modalStack.length - 1] !== id) return;
-      if (document.querySelector(".ps-print-root")) return; // phiếu in đang mở phía trên: Esc để phiếu in tự xử lý
-      dismissRef.current && dismissRef.current();
+      if (__modalStack[__modalStack.length - 1] !== id) return;
+      if (document.querySelector(".ps-print-root")) return; // phiếu in đang mở phía trên: để phiếu in tự xử lý phím
+      if (e.key === "Escape") { dismissRef.current && dismissRef.current(); return; }
+      if (e.key !== "Tab") return;
+      const box = boxRef.current; if (!box) return;
+      const items = Array.prototype.filter.call(box.querySelectorAll(FOCUSABLE), (el) => el.offsetParent !== null || el === document.activeElement);
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0], last = items[items.length - 1], cur = document.activeElement;
+      if (!box.contains(cur)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && (cur === first || cur === box.firstElementChild)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && cur === last) { e.preventDefault(); first.focus(); }
     };
     window.addEventListener("keydown", onKey);
     return () => {
+      clearTimeout(t0);
       window.removeEventListener("keydown", onKey);
+      try { if (prevFocus && prevFocus.focus && document.contains(prevFocus)) prevFocus.focus({ preventScroll: true }); } catch (e) {}
       const i = __modalStack.indexOf(id); if (i !== -1) __modalStack.splice(i, 1);
       if (__modalStack.length === 0) document.body.style.overflow = prevOverflow === "hidden" ? "" : prevOverflow;
     };
   }, []);
   return (
-    <div role="dialog" aria-modal="true" aria-label={label} data-testid={testid}
+    <div ref={boxRef} role="dialog" aria-modal="true" aria-label={label} data-testid={testid}
       onClick={(e) => { if (e.target === e.currentTarget) dismissRef.current && dismissRef.current(); }}
       style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: z, display: "flex", alignItems: align === "top" ? "flex-start" : "center", justifyContent: "center", padding: 16, overflowY: "auto", overscrollBehavior: "contain" }}>
       {children}
@@ -994,6 +1016,12 @@ function SegButton(props) {
       {children}
     </button>
   );
+}
+
+// Lần sửa 118 — dòng / thẻ bấm được (div có onClick): cho bàn phím mở bằng Enter / Space như nút (role="button" tabIndex={0}).
+// Chỉ khi chính dòng đó đang được chọn (không bắt phím của nút con bên trong).
+function kbdClick(e) {
+  if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); e.currentTarget.click(); }
 }
 
 function Card({ children, style }) {
@@ -2187,7 +2215,7 @@ function FirstSetup({ onDone }) {
             <Field label="Mật khẩu (tối thiểu 6 ký tự)"><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} style={selectStyle} /></Field>
             <Field label="Nhập lại mật khẩu"><input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} style={selectStyle} /></Field>
           </div>
-          {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
+          {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
           <div style={{ marginTop: 16 }}>
             <Btn full onClick={handleCreate} disabled={busy}>
               {busy ? <RefreshCw size={16} className="spin" /> : <Lock size={16} />} Tạo tài khoản & vào hệ thống
@@ -2268,7 +2296,7 @@ function LoginScreen({ onEnter, notice }) {
               />
             </Field>
           </div>
-          {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
+          {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
           <div style={{ marginTop: 16 }}>
             <Btn full onClick={handleLogin} disabled={busy}>
               {busy ? <RefreshCw size={16} className="spin" /> : <ChevronRight size={16} />} Đăng nhập
@@ -2670,7 +2698,7 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
   const zoneLabel = zonesForSide.find((z) => z.id === posCode)?.name;
 
   return (
-    <div data-testid="checker-root" style={{ maxWidth: "var(--checker-max, 520px)", margin: "0 auto", padding: "16px 16px 40px" }}>
+    <main data-testid="checker-root" style={{ maxWidth: "var(--checker-max, 520px)", margin: "0 auto", padding: "16px 16px 40px" }}>
       <TopBar title={view === "count" ? `Kiểm kho · Bên ${activeSide}` : view === "orders" ? "Đơn hàng NVBH" : view === "nganh" ? "Kiểm kho theo ngành" : "Tìm vị trí SKU"} sub={`${profile.name} · ${fmtDate(date)}`} profile={profile} onProfileUpdate={onProfileUpdate} onLogout={onLogout} onBack={onBack} />
       <div data-testid="checker-tabs" style={{ display: "flex", gap: 6, marginBottom: 14, background: COLORS.panel2, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: 4 }}>
         {[["count", "Kiểm kho"], ["orders", "Đơn hàng"], ["find", "Tìm vị trí"], ["nganh", "Theo ngành"]].map(([id, label]) => (
@@ -2934,7 +2962,7 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
         )}
       </Card>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -3059,7 +3087,7 @@ function WarehouseOrdersTab() {
         <SegButton active={mode === "sum"} onClick={() => setMode("sum")} testid="wh-mode-sum">Tổng hàng cần soạn</SegButton>
         <SegButton active={mode === "list"} onClick={() => setMode("list")} testid="wh-mode-list">Từng đơn ({filtered.length})</SegButton>
       </div>
-      {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginBottom: 10 }}>{err}</div>}
+      {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginBottom: 10 }}>{err}</div>}
       {loading ? <Card><div style={{ fontSize: FONT.base, color: COLORS.muted }}>Đang tải đơn hàng...</div></Card>
         : filtered.length === 0 ? <Card><div style={{ fontSize: FONT.base, color: COLORS.muted }}>{orders.length ? "Không có đơn khớp bộ lọc." : `Chưa có đơn nào ngày ${fmtDate(date)}.`}</div></Card>
         : mode === "sum" ? (
@@ -3094,7 +3122,7 @@ function WarehouseOrdersTab() {
               const open = openId === o.orderId;
               return (
                 <div key={o.orderId} data-testid="wh-order" style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
-                  <div onClick={() => setOpenId(open ? "" : o.orderId)} style={{ padding: "10px 14px", cursor: "pointer", display: "flex", gap: 10, alignItems: "center" }}>
+                  <div role="button" tabIndex={0} onKeyDown={kbdClick} onClick={() => setOpenId(open ? "" : o.orderId)} style={{ padding: "10px 14px", cursor: "pointer", display: "flex", gap: 10, alignItems: "center" }}>
                     <div style={{ fontSize: FONT.xs, fontWeight: 700, color: COLORS.accent, background: COLORS.accent + "22", borderRadius: 6, padding: "2px 7px", flexShrink: 0 }}>#{String(o.seq || "").padStart(2, "0")}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: FONT.base, color: COLORS.text, overflowWrap: "anywhere", textDecoration: o.dropped ? "line-through" : "none" }}>{o.customerName || "(khách lẻ)"} <span style={{ color: COLORS.muted }}>· {(o.lines || []).length} SP</span></div>
@@ -3143,7 +3171,7 @@ function TopBar({ title, sub, onBack, profile, onProfileUpdate, onLogout }) {
           </button>
         )}
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: FONT.xl, color: COLORS.text, lineHeight: 1.1 }}>{title}</div>
+          <h1 style={{ margin: 0, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: FONT.xl, color: COLORS.text, lineHeight: 1.1 }}>{title}</h1>{/* Lần sửa 118 — tiêu đề trang là h1 (đọc màn hình nhảy theo tiêu đề) */}
           <div style={{ fontSize: FONT.sm, color: COLORS.muted }}>{sub}</div>
         </div>
       </div>
@@ -3474,7 +3502,7 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
           ))}
         </nav>
       )}
-      <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
+      <main style={{ flex: 1, minWidth: 0, width: "100%" }}>
       <TopBar
         title="Bảng điều khiển quản lý"
         sub={`${profile.name} · ${ROLE_LABEL[profile.role] || ""}`}
@@ -3535,7 +3563,7 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
       {tab === "accounts" && isSuper && <AccountsTab profile={profile} />}
       {tab === "cleanup" && isSuper && <DataCleanupTab />}
       {tab === "bank" && canSeeSuperData && <BankAccountTab />}
-      </div>
+      </main>
       {isNarrow && (
         <nav data-testid="manager-bottombar" aria-label="Điều hướng nhanh" style={{
           position: "fixed", left: 0, right: 0, bottom: 0, zIndex: Z.nav, display: "flex", background: COLORS.panel,
@@ -5698,7 +5726,7 @@ function EntryLogTab({ profile }) {
             Ngày này đã chốt. Quản lý cấp cao vẫn có thể sửa hoặc xoá từng dòng khi cần điều chỉnh.
           </div>
         )}
-        {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
+        {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
         {msg && <div style={{ fontSize: FONT.base, color: COLORS.success, marginTop: 12 }}>{msg}</div>}
       </Card>
 
@@ -6929,7 +6957,7 @@ function MonthOrdersTab() {
   );
   const orderRow = (o, withNv, withCust) => (
     <div key={`${o.orderDate}|${o.salesUsername}|${o.orderId}`}>
-      <div data-testid="mq-order" onClick={() => setOpenId(openId === o.orderId ? "" : o.orderId)}
+      <div role="button" tabIndex={0} onKeyDown={kbdClick} data-testid="mq-order" onClick={() => setOpenId(openId === o.orderId ? "" : o.orderId)}
         style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: isNarrow ? 4 : 12, padding: "9px 14px", cursor: "pointer", borderBottom: `1px solid ${COLORS.border}` }}>
         <div style={{ flex: isNarrow ? "1 1 100%" : "1 1 240px", minWidth: 0 }}>
           <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.text, wordBreak: "break-word" }}>{withCust ? (o.customerName || o.customerCode || "—") : (o.salesName || o.salesUsername || "—")}</div>
@@ -6978,7 +7006,7 @@ function MonthOrdersTab() {
             </div>
             <Card style={{ padding: 0, overflow: "hidden" }}>
               {nvRows.map((r, i) => (
-                <div key={r.key} data-testid="mq-nvrow" onClick={() => { setPickNv(r.key); setOpenId(""); }}
+                <div role="button" tabIndex={0} onKeyDown={kbdClick} key={r.key} data-testid="mq-nvrow" onClick={() => { setPickNv(r.key); setOpenId(""); }}
                   style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: isNarrow ? 4 : 12, padding: "11px 14px", cursor: "pointer", borderBottom: i < nvRows.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
                   <div style={{ flex: "1 1 160px", fontSize: FONT.md, fontWeight: 600, color: COLORS.text }}>{r.name}</div>
                   <div style={{ flex: "0 0 80px", fontSize: FONT.base, color: COLORS.text }}><b>{r.orders}</b> đơn</div>
@@ -7007,7 +7035,7 @@ function MonthOrdersTab() {
             <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginBottom: 8 }}>{custShown.length}/{custRows.length} khách có đơn trong tháng — bấm vào khách để xem mặt hàng.</div>
             <Card style={{ padding: 0, overflow: "hidden" }}>
               {custShown.length === 0 ? <div style={{ padding: 14, fontSize: FONT.base, color: COLORS.muted }}>Không có khách nào khớp.</div> : custShown.map((r, i) => (
-                <div key={r.key} data-testid="mq-custrow" onClick={() => { setPickCust(r.key); setOpenId(""); }}
+                <div role="button" tabIndex={0} onKeyDown={kbdClick} key={r.key} data-testid="mq-custrow" onClick={() => { setPickCust(r.key); setOpenId(""); }}
                   style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: isNarrow ? 4 : 12, padding: "11px 14px", cursor: "pointer", borderBottom: i < custShown.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
                   <div style={{ flex: "1 1 200px", minWidth: 0 }}>
                     <div style={{ fontSize: FONT.md, fontWeight: 600, color: COLORS.text, wordBreak: "break-word" }}>{r.name}</div>
@@ -7115,7 +7143,7 @@ function ProfileInfoModal({ profile, onClose, onProfileUpdate }) {
               <Field label="Số điện thoại"><input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="VD: 0901234567" style={selectStyle} /></Field>
               <Field label="Địa chỉ"><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="VD: 12 Nguyễn Trãi, Q5, TP.HCM" style={selectStyle} /></Field>
             </div>
-            {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
+            {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
             {msg && <div style={{ fontSize: FONT.base, color: COLORS.success, marginTop: 12 }}>{msg}</div>}
             <div style={{ marginTop: 16 }}>
               <Btn onClick={handleSave} disabled={busy || !name.trim()}>
@@ -7195,7 +7223,7 @@ function PasswordChangeForm({ profile, forced, onDone }) {
         </Field>
       </div>
       <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 8, lineHeight: 1.5 }}>Không dùng 123456, 1234, tên đăng nhập, Mã NV hay số điện thoại làm mật khẩu.</div>
-      {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
+      {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
       {msg && <div style={{ fontSize: FONT.base, color: COLORS.success, marginTop: 12 }}>{msg}</div>}
       <div style={{ marginTop: 16 }}>
         <Btn onClick={handleSave} disabled={busy} full={!!forced}>
@@ -7636,7 +7664,7 @@ function AccountsTab({ profile }) {
           </div>
         </div>
 
-        {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
+        {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
         {msg && <div style={{ fontSize: FONT.base, color: COLORS.success, marginTop: 12 }}>{msg}</div>}
 
         <div style={{ marginTop: 14 }}>
@@ -8023,7 +8051,7 @@ function LayoutTab() {
 
   return (
     <div>
-      {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginBottom: 12 }}>{err}</div>}
+      {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginBottom: 12 }}>{err}</div>}
       {msg && <div style={{ fontSize: FONT.base, color: COLORS.success, marginBottom: 12 }}>{msg}</div>}
 
       {(layout.sides || SIDES).map((side) => (
@@ -10446,7 +10474,7 @@ function OrderDetailModal({ order, editable, locked, skus, vehicles, onClose, on
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: FONT.md, fontWeight: 700, color: COLORS.text, borderTop: `1px solid ${COLORS.border}`, paddingTop: 10, marginBottom: 14 }}>
               <span>Tổng thanh toán</span><span style={{ fontFamily: "'Roboto Mono', monospace" }}>{formatVND(grandTotal)}</span>
             </div>
-            {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginBottom: 12 }}>{err}</div>}
+            {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginBottom: 12 }}>{err}</div>}
             <div style={{ display: "flex", gap: 8 }}>
               <Btn variant="ghost" onClick={discardEdit} disabled={saving}>Huỷ, không lưu</Btn>
               <Btn onClick={handleSaveEdit} disabled={saving}>{saving ? <RefreshCw size={16} className="spin" /> : <Check size={16} />} Lưu thay đổi</Btn>
@@ -10964,7 +10992,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
   if (loading) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.muted, fontSize: FONT.base }}>Đang tải...</div>;
 
   return (
-    <div data-testid="sales-root" style={{ maxWidth: "var(--sales-max, 640px)", margin: "0 auto", padding: "16px 16px 40px" }}>
+    <main data-testid="sales-root" style={{ maxWidth: "var(--sales-max, 640px)", margin: "0 auto", padding: "16px 16px 40px" }}>
       <TopBar title="Bàn ra đơn" sub={`${profile.name}${profile.phone ? " - " + profile.phone : ""} · NVBH · ${fmtDate(date)}`} profile={profile} onProfileUpdate={onProfileUpdate} onLogout={onLogout} onBack={onBack} />
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: FONT.sm, color: COLORS.muted, background: COLORS.panel2, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "8px 12px", marginBottom: 16 }}>
@@ -10997,7 +11025,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
               const dTotal = Math.max(0, dSub - orderDiscountAmount(dSub, d.discountValue, d.discountUnit, dCart) - dKhtc + (Number(d.taxTT40) || 0));
               const isActive = d.draftId === activeDraftId;
               return (
-                <div
+                <div role="button" tabIndex={0} onKeyDown={kbdClick}
                   key={d.draftId}
                   onClick={() => !isActive && openDraft(d)}
                   style={{
@@ -11208,9 +11236,9 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: FONT.lg, fontWeight: 700, color: COLORS.text, borderTop: `1px solid ${COLORS.border}`, paddingTop: 10 }}>
           <span>Tổng thanh toán</span><span style={{ fontFamily: "'Roboto Mono', monospace" }}>{formatVND(grandTotal)}</span>
         </div>
-        {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
+        {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
         {okMsg && !err && (
-          <div style={{ fontSize: FONT.base, color: COLORS.success, marginTop: 12, padding: "10px 12px", borderRadius: 8, background: COLORS.success + "1f", border: `1px solid ${COLORS.success}66`, fontWeight: 600 }}>
+          <div role="status" style={{ fontSize: FONT.base, color: COLORS.success, marginTop: 12, padding: "10px 12px", borderRadius: 8, background: COLORS.success + "1f", border: `1px solid ${COLORS.success}66`, fontWeight: 600 }}>
             ✓ {okMsg}
           </div>
         )}
@@ -11244,7 +11272,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input type="date" value={viewDate} onChange={(e) => setViewDate(e.target.value)} style={{ ...selectStyle, width: 150 }} />
+            <input type="date" aria-label="Xem đơn của ngày" value={viewDate} onChange={(e) => setViewDate(e.target.value)} style={{ ...selectStyle, width: 150 }} />
             <div style={{ position: "relative", flex: 1, minWidth: 160 }}>
               <Search size={13} color={COLORS.muted} style={{ position: "absolute", left: 9, top: 10 }} />
               <input
@@ -11267,7 +11295,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
             return <div style={{ padding: 18, fontSize: FONT.base, color: COLORS.muted }}>{viewOrders.length === 0 ? "Chưa có đơn nào ngày này." : "Không tìm thấy đơn khớp."}</div>;
           }
           return [...filtered].reverse().map((o) => (
-            <div
+            <div role="button" tabIndex={0} onKeyDown={kbdClick}
               key={o.orderId}
               onClick={() => setDetailOrder(o)}
               style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: `1px solid ${COLORS.border}`, cursor: "pointer" }}
@@ -11337,7 +11365,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
           onCancelEditRequest={cancelEditRequest}
         />
       )}
-    </div>
+    </main>
   );
 }
 
@@ -11738,12 +11766,12 @@ function AdminCreateOrderModal({ profile, onClose, onCreated }) {
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: FONT.lg, fontWeight: 700, color: COLORS.text, borderTop: `1px solid ${COLORS.border}`, paddingTop: 10 }}>
                 <span>Tổng thanh toán</span><span style={{ fontFamily: "'Roboto Mono', monospace" }}>{formatVND(grandTotal)}</span>
               </div>
-              {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
+              {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
               {/* Lần sửa 46 — làm nổi bật rõ ràng lúc lưu xong (khung + nền
                   màu xanh thành công) thay vì chỉ 1 dòng chữ nhỏ dễ lướt qua,
                   để người dùng chắc chắn nhận ra "đã lưu xong" thay vì đoán
                   mò/chờ không biết đến khi nào. */}
-              {okMsg && <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.success, background: "rgba(76,175,109,0.12)", border: `1px solid ${COLORS.success}`, borderRadius: 8, padding: "8px 12px", marginTop: 12 }}>✓ {okMsg}</div>}
+              {okMsg && <div role="status" style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.success, background: "rgba(76,175,109,0.12)", border: `1px solid ${COLORS.success}`, borderRadius: 8, padding: "8px 12px", marginTop: 12 }}>✓ {okMsg}</div>}
               {custNote && <div style={{ fontSize: FONT.base, color: COLORS.accent, marginTop: 8 }}>{custNote}</div>}
               {saving && <div style={{ fontSize: FONT.base, color: COLORS.muted, marginTop: 12 }}>Đang lưu, vui lòng đợi trong giây lát...</div>}
               <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
@@ -12346,7 +12374,7 @@ function OrdersAdminTab({ profile, isSuper }) {
               checked={visibleOrders.length > 0 && selectedOrders.length === visibleOrders.length}
               ref={(el) => { if (el) el.indeterminate = selectedOrders.length > 0 && selectedOrders.length < visibleOrders.length; }}
               onChange={toggleSelectAll}
-              title="Chọn tất cả"
+              title="Chọn tất cả" aria-label="Chọn / bỏ chọn tất cả đơn đang hiện"
               style={{ cursor: "pointer" }}
             />
           )}
@@ -12372,17 +12400,17 @@ function OrdersAdminTab({ profile, isSuper }) {
         )}
         {orders.length > 0 && (
           <div style={{ padding: "10px 16px", borderBottom: `1px solid ${COLORS.border}`, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm mã đơn, tên / mã khách, địa chỉ, SĐT..." style={{ ...selectStyle, flex: "2 1 200px" }} />
-            <select value={fNv} onChange={(e) => setFNv(e.target.value)} style={{ ...selectStyle, flex: "1 1 130px" }}>
+            <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Tìm đơn" placeholder="Tìm mã đơn, tên / mã khách, địa chỉ, SĐT..." style={{ ...selectStyle, flex: "2 1 200px" }} />
+            <select aria-label="Lọc theo NVBH" value={fNv} onChange={(e) => setFNv(e.target.value)} style={{ ...selectStyle, flex: "1 1 130px" }}>
               <option value="">Mọi NVBH</option>
               {nvOptions.map(([u, n]) => <option key={u} value={u}>{n}</option>)}
             </select>
-            <select value={fRoute} onChange={(e) => setFRoute(e.target.value)} style={{ ...selectStyle, flex: "1 1 110px" }}>
+            <select aria-label="Lọc theo tuyến / xe" value={fRoute} onChange={(e) => setFRoute(e.target.value)} style={{ ...selectStyle, flex: "1 1 110px" }}>
               <option value="">Mọi tuyến</option>
               {routeOptionsList.map((r) => <option key={r} value={r}>{r}</option>)}
               <option value="__none__">⚠ Chưa có xe / tuyến sai</option>
             </select>
-            <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} style={{ ...selectStyle, flex: "1 1 140px" }}>
+            <select aria-label="Lọc theo trạng thái đơn" value={fStatus} onChange={(e) => setFStatus(e.target.value)} style={{ ...selectStyle, flex: "1 1 140px" }}>
               <option value="">Mọi trạng thái</option>
               <option value="untaken">Chưa lấy dữ liệu</option>
               <option value="taken">Đã lấy dữ liệu</option>
@@ -12425,13 +12453,16 @@ function OrdersAdminTab({ profile, isSuper }) {
               // Thẻ dọc cho điện thoại (Lần sửa 26) — hàng ngang nhiều cột cố
               // định px cũ bị cắt mất tên khách/số tiền/nút bấm trên màn hẹp.
               <div style={{ padding: "12px 16px", borderBottom: `1px solid ${COLORS.border}`, display: "flex", gap: 10 }}>
-                <input type="checkbox" checked={selectedIds.has(o.orderId)} onChange={() => toggleSelect(o.orderId)} style={{ marginTop: 4, cursor: "pointer", flexShrink: 0 }} />
+                {/* Lần sửa 118 — ô tích có tên (đọc màn hình) + vùng chạm 44px trên điện thoại (ô tích chỉ 20px) */}
+                <label style={{ margin: "-10px", padding: 10, alignSelf: "flex-start", display: "flex", cursor: "pointer", flexShrink: 0 }}>
+                  <input type="checkbox" aria-label={`Chọn đơn ${o.orderId} — ${o.customerName || ""}`} checked={selectedIds.has(o.orderId)} onChange={() => toggleSelect(o.orderId)} style={{ marginTop: 4, cursor: "pointer", flexShrink: 0 }} />
+                </label>
                 <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                   <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.sm, fontWeight: 600, color: COLORS.accent }}>{o.orderId}{o.orderTime ? <span style={{ fontWeight: 400, color: COLORS.muted }}> · {o.orderTime}</span> : null}</div>
                   <div style={{ fontSize: FONT.md, fontWeight: 700, fontFamily: "'Roboto Mono', monospace", color: COLORS.text }}>{formatVND(o.grandTotal)}</div>
                 </div>
-                <div onClick={() => setDetailOrder(o)} style={{ cursor: "pointer", fontSize: FONT.base, fontWeight: 600, color: COLORS.text, margin: "4px 0 6px", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <div role="button" tabIndex={0} onKeyDown={kbdClick} onClick={() => setDetailOrder(o)} style={{ cursor: "pointer", fontSize: FONT.base, fontWeight: 600, color: COLORS.text, margin: "4px 0 6px", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                   <span style={{ textDecoration: "underline dotted" }}>{o.customerName}</span>
                   <OrderFlowBadge o={o} />
                   <OrderStatusBadges o={o} hideTaken />
@@ -12451,13 +12482,13 @@ function OrdersAdminTab({ profile, isSuper }) {
               </div>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
-                <input type="checkbox" checked={selectedIds.has(o.orderId)} onChange={() => toggleSelect(o.orderId)} style={{ cursor: "pointer", flexShrink: 0 }} />
+                <input type="checkbox" aria-label={`Chọn đơn ${o.orderId} — ${o.customerName || ""}`} checked={selectedIds.has(o.orderId)} onChange={() => toggleSelect(o.orderId)} style={{ cursor: "pointer", flexShrink: 0 }} />
                 <div style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.sm, color: COLORS.accent, width: 130, flexShrink: 0 }}>{o.orderId}</div>
                 <div data-testid="order-time" style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.sm, color: COLORS.muted, width: 42, flexShrink: 0 }}>{o.orderTime || "—"}</div>
                 <div style={{ fontSize: FONT.base, color: COLORS.text, width: 110, flexShrink: 0 }}>{o.salesName}</div>
                 {/* Lần sửa 77 — tên khách luôn hiện (được xuống dòng), các nhãn nằm ngay sau / xuống dòng dưới
                     (trước đây trên màn 900–1100px nhãn chiếm hết chỗ, tên khách bị ẩn mất) */}
-                <div onClick={() => setDetailOrder(o)} title="Xem / sửa chi tiết đơn" data-testid="admin-order-cust" style={{ cursor: "pointer", fontSize: FONT.base, color: COLORS.text, flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4, columnGap: 6, flexWrap: "wrap" }}>
+                <div role="button" tabIndex={0} onKeyDown={kbdClick} onClick={() => setDetailOrder(o)} title="Xem / sửa chi tiết đơn" data-testid="admin-order-cust" style={{ cursor: "pointer", fontSize: FONT.base, color: COLORS.text, flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4, columnGap: 6, flexWrap: "wrap" }}>
                   <span style={{ textDecoration: "underline dotted", overflowWrap: "anywhere", minWidth: 0 }}>{o.customerName}</span>
                   <OrderFlowBadge o={o} />
                   <OrderStatusBadges o={o} hideTaken />
@@ -13312,7 +13343,7 @@ function ThuChiTab({ profile, isSuper }) {
           <Field label="Ghi chú (tuỳ chọn)" style={{ minWidth: 180 }}><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: đổ xăng xe giao hàng..." style={selectStyle} /></Field>
           <Btn onClick={handleAdd} disabled={saving}>{saving ? <RefreshCw size={16} className="spin" /> : <Plus size={16} />} Thêm khoản</Btn>
         </div>
-        {err && <div style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 10 }}>{err}</div>}
+        {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 10 }}>{err}</div>}
       </Card>
 
       <Card style={{ padding: 0, overflow: "hidden" }}>
@@ -13912,7 +13943,7 @@ function SalesRevenueTab() {
                 </tr></thead>
                 <tbody>
                   {rev.rows.map((r) => (
-                    <tr key={r.key} data-testid={"sf-row-" + r.key} onClick={() => setDrill(drill === r.key ? null : r.key)} style={{ cursor: "pointer", background: drill === r.key ? COLORS.accent + "14" : "transparent" }}>
+                    <tr role="button" tabIndex={0} onKeyDown={kbdClick} key={r.key} data-testid={"sf-row-" + r.key} onClick={() => setDrill(drill === r.key ? null : r.key)} style={{ cursor: "pointer", background: drill === r.key ? COLORS.accent + "14" : "transparent" }}>
                       <td style={{ ...sfTd, fontWeight: 600 }}>{by === "d" ? fmtDate(r.key) : r.key}</td>
                       <td style={sfNumTd}>{sfMoney(r.tm)}</td><td style={sfNumTd}>{sfMoney(r.ck)}</td>
                       <td style={{ ...sfNumTd, fontWeight: 700 }}>{sfMoney(r.total)}</td><td style={sfNumTd}>{r.n}</td>
@@ -14043,7 +14074,7 @@ function SalesDebtTab() {
             <div style={{ overflowX: "auto" }}>
               <table style={{ ...sfTable, minWidth: 420 }}>
                 <thead><tr><th style={sfTh}>NVBH</th><th style={{ ...sfTh, textAlign: "right" }}>Số đơn nợ</th><th style={{ ...sfTh, textAlign: "right" }}>Nợ lâu nhất (ngày)</th><th style={{ ...sfTh, textAlign: "right" }}>Tiền nợ</th></tr></thead>
-                <tbody>{byNv.map((r) => <tr key={r.nv} data-testid={"sf-debt-nv-" + r.nv} onClick={() => { setNvF(r.nv); setBy("order"); }} style={{ cursor: "pointer" }}><td style={{ ...sfTd, fontWeight: 600 }}>{r.nv}</td><td style={sfNumTd}>{r.n}</td><td style={sfNumTd}>{r.oldest}</td><td style={{ ...sfNumTd, fontWeight: 700 }}>{sfMoney(r.sum)}</td></tr>)}</tbody>
+                <tbody>{byNv.map((r) => <tr role="button" tabIndex={0} onKeyDown={kbdClick} key={r.nv} data-testid={"sf-debt-nv-" + r.nv} onClick={() => { setNvF(r.nv); setBy("order"); }} style={{ cursor: "pointer" }}><td style={{ ...sfTd, fontWeight: 600 }}>{r.nv}</td><td style={sfNumTd}>{r.n}</td><td style={sfNumTd}>{r.oldest}</td><td style={{ ...sfNumTd, fontWeight: 700 }}>{sfMoney(r.sum)}</td></tr>)}</tbody>
               </table>
             </div>
           ) : (
@@ -14191,7 +14222,7 @@ function SalesImportTab({ onGoRevenue }) {
               Chọn file bán hàng của <b>1 ngày</b> (VD <b>FILE_DATA_01-10.xlsx</b> — sheet <b>DATA TONG THANG</b>). <b>Ngày lấy theo tên file</b> (dd-mm), xem lại trước khi ghi.
               Trạng thái từng đơn: <b>THU TM</b>, <b>CK PLP</b>, <b>NỢ</b>, <b>RỚT</b>. Tiền đơn = Giá tiền − Chiết khấu − Thưởng KHTC. Nhập lại cùng file / file đã sửa trạng thái thì cập nhật đúng đơn, không nhân đôi.
             </div>
-            <input data-testid="sf-file" type="file" accept=".xlsx,.xls" onChange={(e) => e.target.files[0] && readFile(e.target.files[0])} style={{ fontSize: FONT.base, color: COLORS.text }} />
+            <input data-testid="sf-file" type="file" aria-label="Chọn file bán hàng (Excel)" accept=".xlsx,.xls" onChange={(e) => e.target.files[0] && readFile(e.target.files[0])} style={{ fontSize: FONT.base, color: COLORS.text }} />
             {error && <div style={{ marginTop: 12, fontSize: FONT.base, color: COLORS.danger }}>{error}</div>}
           </div>
         )}
