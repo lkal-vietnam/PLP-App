@@ -7,13 +7,15 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script src="libs.js?v=be544bef"></script>
+<script src="libs.js?v=d8dc9dee"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
   /* Lần sửa 117 — NÂNG CẤP CẢM GIÁC: chữ mịn, số thẳng cột (mọi bảng tiền / số lượng), ô tích cùng màu chủ đạo */
   body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
-    font-variant-numeric: tabular-nums; accent-color: #2557D6; -webkit-tap-highlight-color: rgba(37, 87, 214, 0.12); }
+    font-variant-numeric: tabular-nums; accent-color: #1B2433; -webkit-tap-highlight-color: rgba(196, 22, 28, 0.10); }
   ::selection { background: rgba(37, 87, 214, 0.18); }
+  /* Lần sửa 119 — thông báo lỗi luôn có dấu ⚠ đứng trước: phân biệt "đỏ báo lỗi" với "đỏ thương hiệu", không chỉ dựa vào màu */
+  [role="alert"]::before { content: "⚠ "; font-weight: 700; }
   .plp-btn:not(:disabled):hover { filter: brightness(0.96); }
   .plp-btn-ghost:not(:disabled):hover, .plp-btn-danger:not(:disabled):hover { background-color: #F6F8FB !important; filter: none; }
   button[aria-pressed]:not(:disabled):hover { filter: brightness(0.98); }
@@ -48,7 +50,7 @@
     :root { --sales-max: 860px; --checker-max: 780px; }
   }
   /* Lần sửa 92 — thanh điều hướng: rê chuột / focus bàn phím */
-  .plp-nav-item:hover { background: rgba(37, 87, 214, 0.08) !important; }
+  .plp-nav-item:hover { background: rgba(196, 22, 28, 0.06) !important; }
   .plp-nav-item:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid #2557D6 !important; outline-offset: 2px; } /* Lần sửa 115 — !important: nút đặt all: unset / outline trong thẻ vẫn hiện viền khi dùng bàn phím */
   /* Lần sửa 112 — ô nhập / ô chọn đang được chọn: viền xanh rõ (trước đây outline: none -> không biết con trỏ đang ở ô nào).
      !important vì kiểu viết thẳng trong thẻ (selectStyle) đặt outline: none. */
@@ -276,6 +278,12 @@ const COLORS = {
   panel2: "#F1F4F9",
   border: "#E1E6EE", // Lần sửa 117 — viền thẻ / đường chia nhạt hơn, gọn mắt (ô nhập dùng borderStrong)
   borderStrong: "#C9D2DF",
+  // Lần sửa 119 — MÀU THƯƠNG HIỆU ĐỎ PLP: dùng cho nút chính, mục đang chọn, thanh tiêu đề (mảng màu đặc, chữ trắng 6:1 —
+  // đọc tốt ngoài nắng). `accent` (xanh) từ nay là màu THÔNG TIN: mã đơn / mã SP, ghi chú, đường dẫn — KHÔNG đổi sang đỏ
+  // để chữ đỏ chỉ còn nghĩa "lỗi / nguy hiểm".
+  brand: "#C4161C",
+  brandBright: "#D32027",
+  brandDark: "#9E1116",
   accent: "#2557D6",
   accentDark: "#1B43A8",
   text: "#1B2433",
@@ -863,7 +871,7 @@ function Btn({ children, onClick, variant = "primary", disabled, style, full, ty
   };
   const variants = {
     // Lần sửa 117 — nút chính có bóng nhẹ cùng màu; nút phụ nền trắng + viền rõ (trước trong suốt, chìm vào nền xám)
-    primary: { background: COLORS.accent, color: COLORS.onAccent, boxShadow: "0 1px 2px rgba(37,87,214,0.25), inset 0 1px 0 rgba(255,255,255,0.12)" },
+    primary: { background: COLORS.brand, color: COLORS.onAccent, boxShadow: "0 1px 2px rgba(196,22,28,0.30), inset 0 1px 0 rgba(255,255,255,0.14)" },
     ghost: { background: COLORS.panel, color: COLORS.text, border: `1px solid ${COLORS.borderStrong}`, boxShadow: "0 1px 2px rgba(15,23,42,0.05)" },
     danger: { background: COLORS.panel, color: COLORS.danger, border: `1px solid ${COLORS.danger}55` },
     success: { background: COLORS.success, color: COLORS.onAccent, boxShadow: "0 1px 2px rgba(15,107,53,0.25)" },
@@ -957,7 +965,7 @@ function Pill(props) {
 // Lần sửa 113 — CHIP: nút chọn / lọc dạng viên thuốc (trước đây ~8 kiểu tự vẽ: pillBtn, sfPill, tabBtn, chip...).
 //   active: đang chọn · color: màu khi chọn (mặc định xanh) · tinted: chữ có màu ngay cả khi chưa chọn · small: cỡ nhỏ
 function Chip(props) {
-  const { active, color = COLORS.accent, tinted, small, onClick, title, testid, disabled, style, children } = props;
+  const { active, color = COLORS.brand, tinted, small, onClick, title, testid, disabled, style, children } = props;
   return (
     <button type="button" data-testid={testid} title={title} aria-pressed={!!active} onClick={onClick} disabled={disabled}
       style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: small ? "5px 10px" : "7px 13px", borderRadius: 999,
@@ -1008,7 +1016,7 @@ function LinkButton(props) {
 }
 // Lần sửa 114 — NÚT CHỌN DẠNG KHỐI (chia đều chiều ngang, chọn 1 trong 2–4): "Tổng hàng / Từng đơn", "Kệ / Khu", "Trừ / Cộng tồn"...
 function SegButton(props) {
-  const { active, color = COLORS.accent, onClick, testid, disabled, style, children } = props;
+  const { active, color = COLORS.brand, onClick, testid, disabled, style, children } = props;
   return (
     <button type="button" data-testid={testid} aria-pressed={!!active} onClick={onClick} disabled={disabled}
       style={{ flex: 1, minHeight: 40, boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: FONT.base, fontWeight: 700,
@@ -1022,6 +1030,18 @@ function SegButton(props) {
 // Chỉ khi chính dòng đó đang được chọn (không bắt phím của nút con bên trong).
 function kbdClick(e) {
   if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); e.currentTarget.click(); }
+}
+
+// Lần sửa 119 — TIÊU ĐỀ BƯỚC / KHỐI: số bước trong vòng tròn đỏ (hoặc vạch đỏ nếu không có số) + chữ đậm, dễ dò mắt ngoài nắng.
+function StepTitle(props) {
+  const { n, children, style } = props;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: FONT.base, fontWeight: 700, color: COLORS.text, letterSpacing: 0.2, marginBottom: 10, ...style }}>
+      {n ? <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", background: COLORS.brand, color: "#fff", fontSize: FONT.sm, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n}</span>
+        : <span aria-hidden="true" style={{ width: 4, height: 16, borderRadius: 2, background: COLORS.brand, flexShrink: 0 }} />}
+      <span>{children}</span>
+    </div>
+  );
 }
 
 function Card({ children, style }) {
@@ -2146,16 +2166,16 @@ function SkuPicker({ skus, selectedCode, onSelect, autoFocus, scan, onScanPick, 
 <script type="text/babel" data-presets="react">
 function AuthHeader() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, color: "#fff" }}>
       {/* Lần sửa 117 — dùng đúng biểu tượng PLP (chữ trắng nền đỏ, giống icon cài app) thay cho icon chung */}
-      <div aria-hidden="true" style={{ width: 46, height: 46, borderRadius: 12, background: "#D32027", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontWeight: 700, fontSize: FONT.lg, letterSpacing: 0.5, boxShadow: "0 4px 12px rgba(211,32,39,0.28)" }}>
+      <div aria-hidden="true" style={{ width: 46, height: 46, borderRadius: 12, background: "#fff", color: COLORS.brandBright, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontWeight: 700, fontSize: FONT.lg, letterSpacing: 0.5, boxShadow: "0 4px 14px rgba(0,0,0,0.18)" }}>
         PLP
       </div>
       <div>
-        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: FONT.xl, lineHeight: 1.05, letterSpacing: 0.2, color: COLORS.text }}>
+        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: FONT.xl, lineHeight: 1.05, letterSpacing: 0.3, color: "#fff" }}>
           VẬN HÀNH KHO PLP
         </div>
-        <div style={{ fontSize: FONT.base, color: COLORS.muted }}>Kiểm kho tồn kho · Ra đơn bán hàng</div>
+        <div style={{ fontSize: FONT.base, color: "rgba(255,255,255,0.88)" }}>Kiểm kho tồn kho · Ra đơn bán hàng</div>
       </div>
     </div>
   );
@@ -2199,7 +2219,7 @@ function FirstSetup({ onDone }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div data-testid="auth-page" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: `linear-gradient(180deg, ${COLORS.brandBright} 0%, ${COLORS.brand} 46%, ${COLORS.bg} 46%)` }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
         <AuthHeader />
         <Card style={{ padding: 22, boxShadow: "0 10px 30px -12px rgba(15,23,42,0.18), 0 1px 3px rgba(15,23,42,0.06)" }}>
@@ -2269,7 +2289,7 @@ function LoginScreen({ onEnter, notice }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div data-testid="auth-page" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: `linear-gradient(180deg, ${COLORS.brandBright} 0%, ${COLORS.brand} 46%, ${COLORS.bg} 46%)` }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
         <AuthHeader />
         <Card style={{ padding: 22, boxShadow: "0 10px 30px -12px rgba(15,23,42,0.18), 0 1px 3px rgba(15,23,42,0.06)" }}>
@@ -2704,7 +2724,7 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
         {[["count", "Kiểm kho"], ["orders", "Đơn hàng"], ["find", "Tìm vị trí"], ["nganh", "Theo ngành"]].map(([id, label]) => (
           <button key={id} type="button" aria-pressed={view === id} onClick={() => setView(id)} style={{
             flex: 1, padding: "9px 6px", borderRadius: 7, cursor: "pointer", fontSize: FONT.base, fontWeight: 700,
-            background: view === id ? COLORS.accent : "transparent", color: view === id ? COLORS.onAccent : COLORS.text, border: "none",
+            background: view === id ? COLORS.brand : "transparent", color: view === id ? COLORS.onAccent : COLORS.text, border: "none",
           }}>{label}</button>
         ))}
       </div>
@@ -2731,7 +2751,7 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
       )}
 
       <Card style={{ marginBottom: 16, opacity: locked ? 0.5 : 1, pointerEvents: locked ? "none" : "auto" }}>
-        <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.muted, marginBottom: 10 }}>VỊ TRÍ</div>
+        <StepTitle n={1}>VỊ TRÍ</StepTitle>
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: FONT.sm, color: COLORS.muted, fontWeight: 600, letterSpacing: 0.2, marginBottom: 6 }}>BÊN KIỂM</div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -2742,9 +2762,9 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
                 style={{
                   flex: 1, padding: "10px", borderRadius: 8, cursor: "pointer", fontWeight: 700,
                   fontFamily: "'Roboto Mono', monospace", fontSize: FONT.base,
-                  background: activeSide === side ? COLORS.accent : COLORS.panel2,
+                  background: activeSide === side ? COLORS.brand : COLORS.panel2,
                   color: activeSide === side ? COLORS.onAccent : COLORS.text,
-                  border: `1px solid ${activeSide === side ? COLORS.accent : COLORS.border}`,
+                  border: `1px solid ${activeSide === side ? COLORS.brand : COLORS.border}`,
                 }}
               >
                 Bên {side}
@@ -2834,7 +2854,7 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
 
         <div style={{ height: 1, background: COLORS.border, margin: "16px 0" }} />
 
-        <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.muted, marginBottom: 10 }}>SẢN PHẨM</div>
+        <StepTitle n={2}>SẢN PHẨM</StepTitle>
         {skus.length === 0 && (
           <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 8 }}>
             Chưa có danh mục SKU. Nhờ quản lý import danh mục ở mục "Danh mục SKU".
@@ -2933,7 +2953,7 @@ function CheckerView({ profile, onBack, onLogout, onProfileUpdate }) {
         )}
       </Card>
 
-      <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.muted, marginBottom: 8 }}>ĐÃ NHẬP GẦN ĐÂY</div>
+      <StepTitle style={{ marginBottom: 8 }}>ĐÃ NHẬP GẦN ĐÂY</StepTitle>
       <Card style={{ padding: 0, overflow: "hidden" }}>
         {loading ? (
           <div style={{ padding: 18, fontSize: FONT.base, color: COLORS.muted }}>Đang tải...</div>
@@ -3163,16 +3183,18 @@ function WarehouseOrdersTab() {
 <script type="text/babel" data-presets="react">
 function TopBar({ title, sub, onBack, profile, onProfileUpdate, onLogout }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 16, paddingTop: 8 }}>
+    <div data-testid="topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 16, padding: "12px 14px", borderRadius: 14, color: "#fff",
+      background: `linear-gradient(135deg, ${COLORS.brandBright} 0%, ${COLORS.brand} 60%, ${COLORS.brandDark} 130%)`, boxShadow: "0 6px 18px -8px rgba(158,17,22,0.55)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
         {onBack && (
-          <button type="button" onClick={onBack} aria-label="Quay lại" title="Quay lại" style={{ background: COLORS.panel2, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: 8, cursor: "pointer", display: "flex", flexShrink: 0 }}>
-            <ArrowLeft size={16} color={COLORS.text} />
+          <button type="button" onClick={onBack} aria-label="Quay lại" title="Quay lại" style={{ background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 8, padding: 8, cursor: "pointer", display: "flex", flexShrink: 0 }}>
+            <ArrowLeft size={16} color="#fff" />
           </button>
         )}
+        {!onBack && <div aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 10, background: "#fff", color: COLORS.brandBright, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontWeight: 700, fontSize: FONT.md, letterSpacing: 0.4, flexShrink: 0 }}>PLP</div>}
         <div style={{ minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: FONT.xl, color: COLORS.text, lineHeight: 1.1 }}>{title}</h1>{/* Lần sửa 118 — tiêu đề trang là h1 (đọc màn hình nhảy theo tiêu đề) */}
-          <div style={{ fontSize: FONT.sm, color: COLORS.muted }}>{sub}</div>
+          <h1 style={{ margin: 0, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: FONT.xl, color: "#fff", lineHeight: 1.1, letterSpacing: 0.2 }}>{title}</h1>{/* Lần sửa 118 — tiêu đề trang là h1 (đọc màn hình nhảy theo tiêu đề) */}
+          <div style={{ fontSize: FONT.sm, color: "rgba(255,255,255,0.88)" }}>{sub}</div>
         </div>
       </div>
       {profile && <AccountMenu profile={profile} onProfileUpdate={onProfileUpdate} onLogout={onLogout} />}
@@ -3212,11 +3234,11 @@ function AccountMenu({ profile, onProfileUpdate, onLogout }) {
         title="Tài khoản"
         style={{
           display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", borderRadius: 20,
-          cursor: "pointer", background: COLORS.panel2, border: `1px solid ${COLORS.border}`,
+          cursor: "pointer", background: "#fff", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
         }}
       >
         <div style={{
-          width: 28, height: 28, borderRadius: "50%", background: COLORS.accent, color: COLORS.onAccent,
+          width: 28, height: 28, borderRadius: "50%", background: COLORS.brand, color: COLORS.onAccent,
           display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: FONT.base,
           fontFamily: "'Barlow Condensed', sans-serif", flexShrink: 0,
         }}>{initial}</div>
@@ -3464,12 +3486,12 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
         style={{
           display: "flex", alignItems: "center", gap: 10, width: "100%", padding: compact ? "13px 16px" : "9px 12px",
           borderRadius: compact ? 0 : 8, border: "none", cursor: "pointer", textAlign: "left", fontSize: FONT.base, fontWeight: active ? 700 : 600,
-          background: active ? COLORS.accent + "14" : "transparent", color: active ? COLORS.accent : COLORS.text,
-          boxShadow: active && !compact ? `inset 3px 0 0 ${COLORS.accent}` : "none",
+          background: active ? COLORS.brand + "14" : "transparent", color: active ? COLORS.brand : COLORS.text,
+          boxShadow: active && !compact ? `inset 3px 0 0 ${COLORS.brand}` : "none",
         }}
       >
         <t.icon size={16} /> <span style={{ flex: 1, minWidth: 0 }}>{t.label}</span>
-        {t.id === "customers" && custReqCount > 0 && <Pill title="Đề xuất cập nhật khách chờ duyệt" solid color={COLORS.accent}>{custReqCount}</Pill>}
+        {t.id === "customers" && custReqCount > 0 && <Pill title="Đề xuất cập nhật khách chờ duyệt" solid color={COLORS.brand}>{custReqCount}</Pill>}
       </button>
     );
   };
@@ -3494,6 +3516,10 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
           width: 232, flexShrink: 0, position: "sticky", top: 16, maxHeight: "calc(100vh - 32px)", overflowY: "auto",
           background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 10,
         }}>
+          <div aria-hidden="true" style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px 12px", marginBottom: 6, borderBottom: `1px solid ${COLORS.border}` }}>
+            <div style={{ width: 34, height: 34, borderRadius: 9, background: COLORS.brandBright, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow Condensed', 'Inter', sans-serif", fontWeight: 700, fontSize: FONT.base, letterSpacing: 0.4 }}>PLP</div>
+            <div style={{ lineHeight: 1.2 }}><div style={{ fontWeight: 700, fontSize: FONT.base, color: COLORS.text }}>Vận hành kho</div><div style={{ fontSize: FONT.xs, color: COLORS.muted }}>Kho · Bán hàng</div></div>
+          </div>
           {tabGroups.map((g, gi) => (
             <div key={g.label}>
               {groupLabel(g.label, g.label, gi === 0)}
@@ -3537,7 +3563,7 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
             cursor: "pointer", fontSize: FONT.md, fontWeight: 700, background: COLORS.panel, color: COLORS.text, border: `1px solid ${COLORS.border}`,
           }}
         >
-          <Menu size={16} color={COLORS.accent} />
+          <Menu size={16} color={COLORS.brand} />
           <span style={{ flex: 1, textAlign: "left" }}>{curLabel}</span>
           <ChevronRight size={14} color={COLORS.muted} />
         </button>
@@ -3574,7 +3600,7 @@ function ManagerView({ profile, onLogout, onProfileUpdate }) {
             return (
               <button key={t.id} type="button" data-testid={"bar-" + t.id} aria-current={active && t.id !== "__more" ? "page" : undefined} onClick={() => (t.id === "__more" ? setSheetOpen(true) : goTab(t.id))}
                 className="tap-free"
-                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "8px 2px 7px", minHeight: 56, border: "none", background: "transparent", boxShadow: active ? `inset 0 2px 0 ${COLORS.accent}` : "none" /* Lần sửa 117 — vạch xanh trên mục đang mở */, cursor: "pointer", fontSize: FONT.xs, fontWeight: active ? 700 : 600, color: active ? COLORS.accent : COLORS.muted }}>
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "8px 2px 7px", minHeight: 56, border: "none", background: "transparent", boxShadow: active ? `inset 0 2px 0 ${COLORS.brand}` : "none" /* Lần sửa 117 — vạch xanh trên mục đang mở */, cursor: "pointer", fontSize: FONT.xs, fontWeight: active ? 700 : 600, color: active ? COLORS.brand : COLORS.muted }}>
                 <t.icon size={20} /> {t.label}
               </button>
             );
@@ -6932,15 +6958,15 @@ function MonthOrdersTab() {
   }, [nvOrders]);
 
   const stat = (label, value, sub) => (
-    <div style={{ flex: "1 1 120px", minWidth: 110, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "8px 12px", background: COLORS.panel }}>
-      <div style={{ fontSize: FONT.sm, color: COLORS.muted }}>{label}</div>
-      <div style={{ fontSize: FONT.md, fontWeight: 700, color: COLORS.text, wordBreak: "break-word" }}>{value}</div>
+    <div style={{ flex: "1 1 120px", minWidth: 110, border: `1px solid ${COLORS.border}`, borderTop: `3px solid ${COLORS.brand}`, borderRadius: 10, padding: "10px 14px", background: COLORS.panel, boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}>
+      <div style={{ fontSize: FONT.xs, color: COLORS.muted, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: FONT.xl, fontWeight: 800, color: COLORS.text, wordBreak: "break-word", lineHeight: 1.25 }}>{value}</div>
       {sub ? <div style={{ fontSize: FONT.sm, color: COLORS.muted }}>{sub}</div> : null}
     </div>
   );
   const segBtn = (id, label) => (
     <button type="button" aria-pressed={view === id} data-testid={`mq-view-${id}`} onClick={() => { setView(id); setOpenId(""); }}
-      style={{ flex: 1, padding: "9px 14px", fontSize: FONT.base, fontWeight: 600, cursor: "pointer", border: `1px solid ${COLORS.border}`, background: view === id ? COLORS.accent : COLORS.panel, color: view === id ? COLORS.onAccent : COLORS.text }}>{label}</button>
+      style={{ flex: 1, padding: "9px 14px", fontSize: FONT.base, fontWeight: 600, cursor: "pointer", border: `1px solid ${COLORS.border}`, background: view === id ? COLORS.brand : COLORS.panel, color: view === id ? COLORS.onAccent : COLORS.text }}>{label}</button>
   );
   const backBtn = (onClick) => (
     <LinkButton tone="accent" onClick={onClick} testid="mq-back" style={{ fontSize: FONT.base, padding: "0 0 8px 0" }}>← Quay lại danh sách</LinkButton>
@@ -11058,7 +11084,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
       )}
 
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.muted, marginBottom: 10 }}>1 · KHÁCH HÀNG</div>
+        <StepTitle n={1}>KHÁCH HÀNG</StepTitle>
         <CustomerPicker customers={customers} vehicles={vehicles} value={customer} onChange={setCustomer} />
         <div style={{ marginTop: 12 }}>
           <Field label="Ghi chú đơn hàng (tuỳ chọn)">
@@ -11068,7 +11094,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
       </Card>
 
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.muted, marginBottom: 10 }}>2 · THÊM SẢN PHẨM</div>
+        <StepTitle n={2}>THÊM SẢN PHẨM</StepTitle>
         <SkuPicker skus={skus} selectedCode={pickSku} onSelect={choosePickSku} />
         {selectedSku && (
           <div style={{ marginTop: 12 }}>
@@ -11169,8 +11195,8 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
       </Card>
 
       <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
-        <div style={{ padding: "10px 16px", borderBottom: `1px solid ${COLORS.border}`, fontSize: FONT.sm, color: COLORS.muted, fontWeight: 600 }}>
-          3 · SẢN PHẨM TRONG ĐƠN — {cart.length} dòng
+        <div style={{ padding: "12px 16px 2px", borderBottom: `1px solid ${COLORS.border}` }}>
+          <StepTitle n={3}>SẢN PHẨM TRONG ĐƠN — {cart.length} dòng</StepTitle>
         </div>
         {cart.length === 0 ? (
           <div style={{ padding: 18, fontSize: FONT.base, color: COLORS.muted }}>Chưa có sản phẩm nào.</div>
@@ -11233,8 +11259,9 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
         {!hasAdj && <LinkButton onClick={() => setAdjOpen(false)} style={{ padding: "0 0 8px" }}>Ẩn bớt</LinkButton>}
         </div>
         )}
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: FONT.lg, fontWeight: 700, color: COLORS.text, borderTop: `1px solid ${COLORS.border}`, paddingTop: 10 }}>
-          <span>Tổng thanh toán</span><span style={{ fontFamily: "'Roboto Mono', monospace" }}>{formatVND(grandTotal)}</span>
+        {/* Lần sửa 119 — tổng thanh toán: khung nhạt, số to đậm (con số quan trọng nhất của đơn) */}
+        <div data-testid="grand-total" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, fontWeight: 700, color: COLORS.text, background: COLORS.panel2, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
+          <span style={{ fontSize: FONT.md }}>Tổng thanh toán</span><span style={{ fontFamily: "'Roboto Mono', monospace", fontSize: FONT.xl, color: COLORS.brandDark }}>{formatVND(grandTotal)}</span>
         </div>
         {err && <div role="alert" style={{ fontSize: FONT.base, color: COLORS.danger, marginTop: 12 }}>{err}</div>}
         {okMsg && !err && (
@@ -11259,9 +11286,7 @@ function SalesView({ profile, onBack, onLogout, onProfileUpdate }) {
       <Card style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "10px 16px", borderBottom: `1px solid ${COLORS.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            <span style={{ fontSize: FONT.sm, color: COLORS.muted, fontWeight: 600 }}>
-              ĐƠN CỦA TÔI{viewDate === date ? " — HÔM NAY" : ""} — {viewOrders.length}
-            </span>
+            <StepTitle style={{ marginBottom: 0 }}>ĐƠN CỦA TÔI{viewDate === date ? " — HÔM NAY" : ""} — {viewOrders.length}</StepTitle>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <RefreshButton auto={autoView} />
               {viewOrders.length > 0 && (
@@ -11599,7 +11624,7 @@ function AdminCreateOrderModal({ profile, onClose, onCreated }) {
             </Field>
 
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.muted, marginBottom: 10 }}>KHÁCH HÀNG</div>
+              <StepTitle n={1}>KHÁCH HÀNG</StepTitle>
               <CustomerPicker customers={customers} vehicles={vehicles} value={customer} onChange={setCustomer} directUpdate />
               <div style={{ marginTop: 12 }}>
                 <Field label="Ghi chú đơn hàng (tuỳ chọn)">
@@ -11609,7 +11634,7 @@ function AdminCreateOrderModal({ profile, onClose, onCreated }) {
             </div>
 
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${COLORS.border}` }}>
-              <div style={{ fontSize: FONT.base, fontWeight: 600, color: COLORS.muted, marginBottom: 10 }}>THÊM SẢN PHẨM</div>
+              <StepTitle n={2}>THÊM SẢN PHẨM</StepTitle>
               <SkuPicker skus={skus} selectedCode={pickSku} onSelect={choosePickSku} />
               {selectedSku && (
                 <div style={{ marginTop: 12 }}>
@@ -12526,15 +12551,15 @@ function OrdersAdminTab({ profile, isSuper }) {
         <>
           <div style={{ height: 72 }} />
           {/* Lần sửa 108 — thanh thao tác dính đáy (nằm ngay trên thanh điều hướng dưới), luôn trong tầm ngón cái */}
-          <div data-testid="phone-action-bar" style={{ position: "fixed", left: 8, right: 8, bottom: "calc(64px + env(safe-area-inset-bottom))", zIndex: Z.phoneBar, background: COLORS.panel, border: `1px solid ${COLORS.accent}55`, borderRadius: 12, boxShadow: "0 6px 24px rgba(15,23,42,0.18)", padding: "6px 6px 6px 10px", display: "flex", alignItems: "center", gap: 4 }}>
-            <div style={{ fontSize: FONT.sm, color: COLORS.muted, lineHeight: 1.2, minWidth: 44 }}><b style={{ fontSize: FONT.md, color: COLORS.accent }}>{selectedOrders.length}</b><br />đã chọn</div>
+          <div data-testid="phone-action-bar" style={{ position: "fixed", left: 8, right: 8, bottom: "calc(64px + env(safe-area-inset-bottom))", zIndex: Z.phoneBar, background: COLORS.panel, border: `1px solid ${COLORS.brand}55`, borderRadius: 12, boxShadow: "0 6px 24px rgba(15,23,42,0.18)", padding: "6px 6px 6px 10px", display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ fontSize: FONT.sm, color: COLORS.muted, lineHeight: 1.2, minWidth: 44 }}><b style={{ fontSize: FONT.md, color: COLORS.brand }}>{selectedOrders.length}</b><br />đã chọn</div>
             {[
               { k: "excel", label: "Excel", icon: <Download size={16} />, on: exportExcel },
               { k: "print", label: "In", icon: <span style={{ fontSize: FONT.md }}>🖨</span>, on: () => setPrintOrders(selectedOrders) },
               { k: "take", label: "Đã lấy", icon: <Lock size={16} />, on: () => markTakenAsk(selectedVisibleIds) },
               { k: "untake", label: "Mở khoá", icon: <LockOpen size={16} />, on: () => unmarkTaken(selectedVisibleIds) },
             ].map((b) => (
-              <button key={b.k} data-testid={"bar-act-" + b.k} onClick={b.on} style={{ flex: 1, minWidth: 0, minHeight: 48, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, background: b.k === "print" ? COLORS.accent : "transparent", color: b.k === "print" ? COLORS.onAccent : COLORS.text, border: b.k === "print" ? "none" : `1px solid ${COLORS.border}`, borderRadius: 9, fontSize: FONT.sm, fontWeight: 700, cursor: "pointer" }}>
+              <button key={b.k} data-testid={"bar-act-" + b.k} onClick={b.on} style={{ flex: 1, minWidth: 0, minHeight: 48, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, background: b.k === "print" ? COLORS.brand : "transparent", color: b.k === "print" ? COLORS.onAccent : COLORS.text, border: b.k === "print" ? "none" : `1px solid ${COLORS.border}`, borderRadius: 9, fontSize: FONT.sm, fontWeight: 700, cursor: "pointer" }}>
                 {b.icon}{b.label}
               </button>
             ))}
@@ -13845,9 +13870,9 @@ const sfTd = { padding: "8px 10px", borderBottom: `1px solid ${COLORS.border}55`
 const sfNumTd = { ...sfTd, textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" };
 function SfStat({ label, value, sub, color }) {
   return (
-    <div style={{ flex: "1 1 150px", minWidth: 140, background: COLORS.panel2, border: `1px solid ${COLORS.border}`, borderRadius: 10, padding: "10px 14px" }}>
-      <div style={{ fontSize: FONT.sm, color: COLORS.muted, fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: FONT.lg, fontWeight: 800, color: color || COLORS.text, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+    <div style={{ flex: "1 1 150px", minWidth: 140, background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderTop: `3px solid ${color || COLORS.borderStrong}`, borderRadius: 10, padding: "10px 14px", boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}>
+      <div style={{ fontSize: FONT.xs, color: COLORS.muted, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: FONT.xl, fontWeight: 800, color: color || COLORS.text, fontVariantNumeric: "tabular-nums", lineHeight: 1.25 }}>{value}</div>
       {sub && <div style={{ fontSize: FONT.sm, color: COLORS.muted, marginTop: 2 }}>{sub}</div>}
     </div>
   );
