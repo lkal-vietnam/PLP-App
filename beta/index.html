@@ -7,13 +7,15 @@
 <title>Vận Hành Kho PLP</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap">
 <script src="config.js"></script><script>window.__APP_URL = location.href.split(/[?#]/)[0];</script><!-- Lần sửa 105 — link /exec cho nút "Cài app về máy" -->
-<script defer src="libs.js?v=a333b5bc"></script>
+<script defer src="libs.js?v=5cf5eccb"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #F3F5F9; color-scheme: light; }
   /* Lần sửa 117 — NÂNG CẤP CẢM GIÁC: chữ mịn, số thẳng cột (mọi bảng tiền / số lượng), ô tích cùng màu chủ đạo */
   body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
     font-variant-numeric: tabular-nums; accent-color: #1B2433; -webkit-tap-highlight-color: rgba(196, 22, 28, 0.10); }
   ::selection { background: rgba(37, 87, 214, 0.18); }
+  /* Lần sửa 127 — ô "Chọn tệp" không được rộng hơn khung (điện thoại: tab Khách hàng tràn ngang 14px) */
+  input[type="file"] { max-width: 100%; }
   /* Lần sửa 119 — thông báo lỗi luôn có dấu ⚠ đứng trước: phân biệt "đỏ báo lỗi" với "đỏ thương hiệu", không chỉ dựa vào màu */
   [role="alert"]::before { content: "⚠ "; font-weight: 700; }
   .plp-btn:not(:disabled):hover { filter: brightness(0.96); }
@@ -117,6 +119,6 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
 
 
-<script defer src="app.js?v=a333b5bc"></script>
+<script defer src="app.js?v=5cf5eccb"></script>
 </body>
 </html>
